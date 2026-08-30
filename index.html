@@ -1,0 +1,2669 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<base target="_top">
+<title>ภารกิจ 5 วันกู้วิกฤตโรงเรียน — แนวคิดเชิงคำนวณ ม.4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#0f1724;
+    --bg-1:#182437;
+    --panel:#1e2d44;
+    --panel-2:#26374f;
+    --line:#3a5170;
+    --ink:#0f1724;
+    --paper:#f7f3e8;
+    --paper-2:#ece5d3;
+    --sky:#4fc3f7;
+    --sky-dim:#2b8fbd;
+    --lime:#8bc34a;
+    --amber:#ffb74d;
+    --rose:#ef5350;
+    --violet:#b085f5;
+    --txt:#e8eef7;
+    --txt-dim:#a8bbd4;
+    --font-d:'Kanit', sans-serif;
+    --font-b:'Sarabun', sans-serif;
+    /* ขนาดที่ปรับตามจอ — ถูก override ใน @media ท้ายไฟล์ */
+    --zone-size:62px;
+    --avatar:42px;
+    --dpad:48px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{min-height:100%;}
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+  /* กันการซูมเมื่อแตะสองครั้งเร็ว ๆ บนมือถือ (แต่ยังหุบ–กางนิ้วซูมได้ปกติ) */
+  button, a, .pick, .ord, .zone, .bag-item, #prompt{ touch-action:manipulation; }
+  body.modal-open{ overflow:hidden; }
+  body{
+    font-family:var(--font-b);
+    color:var(--txt);
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(79,195,247,.10), transparent 55%),
+      radial-gradient(ellipse at 85% 100%, rgba(176,133,245,.10), transparent 55%),
+      linear-gradient(170deg, var(--bg-1), var(--bg-0));
+    background-attachment:fixed;
+    min-height:100vh; display:flex; align-items:flex-start; justify-content:center;
+    padding:14px 12px calc(40px + env(safe-area-inset-bottom));
+  }
+  #app{ width:100%; max-width:1000px; }
+  .screen{ display:none; }
+  .screen.active{ display:block; animation:fadeIn .3s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+  button{ font-family:var(--font-b); cursor:pointer; border:none; }
+  button:focus-visible, [tabindex]:focus-visible{ outline:3px solid var(--sky); outline-offset:2px; }
+  h1,h2,h3{ font-family:var(--font-d); font-weight:600; line-height:1.35; }
+
+  .card{
+    background:linear-gradient(165deg, var(--panel), var(--bg-1));
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:0 18px 40px rgba(0,0,0,.45);
+    padding:22px;
+  }
+
+  /* ---------- buttons ---------- */
+  .btn{
+    font-family:var(--font-d); font-weight:500; font-size:15px;
+    padding:11px 22px; border-radius:10px;
+    min-height:46px; display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    text-align:center; text-decoration:none;
+    background:linear-gradient(165deg, var(--sky), var(--sky-dim));
+    color:#06202c; box-shadow:0 3px 0 #1b6d92; transition:transform .07s, filter .15s;
+  }
+  a.btn{ cursor:pointer; }
+  .btn:hover{ filter:brightness(1.08); }
+  .btn:active{ transform:translateY(3px); box-shadow:0 0 0 #1b6d92; }
+  .btn.ghost{ background:transparent; border:1px solid var(--line); color:var(--txt); box-shadow:none; font-size:14px; padding:9px 16px; }
+  .btn.ghost:hover{ background:rgba(255,255,255,.06); }
+  .btn.lime{ background:linear-gradient(165deg,#a5d66a,#6fa53a); color:#12240a; box-shadow:0 3px 0 #4d7727; }
+  .btn.amber{ background:linear-gradient(165deg,#ffcc80,#f0932b); color:#3a2405; box-shadow:0 3px 0 #b06d15; }
+  .btn.sm{ font-size:13px; padding:7px 14px; min-height:40px; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; box-shadow:none; }
+
+  /* ---------- start screen ---------- */
+  .hero{ text-align:center; padding:8px 4px 4px; }
+  .eyebrow{ font-size:13px; letter-spacing:2px; color:var(--sky); font-family:var(--font-d); }
+  .title{ font-size:clamp(24px,4.6vw,38px); color:#fff; margin:6px 0 10px; }
+  .title span{ color:var(--amber); }
+  .lede{ font-size:15px; color:var(--txt-dim); max-width:640px; margin:0 auto; line-height:1.9; }
+  .chip-row{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:16px 0 4px; }
+  .chip{ font-size:12.5px; padding:6px 13px; border-radius:20px; background:rgba(79,195,247,.10); border:1px solid var(--sky-dim); color:#bfe7fb; }
+
+  .form-grid{ display:grid; grid-template-columns:1fr 130px 110px; gap:12px; margin:20px 0 6px; }
+  .field label{ display:block; font-size:12.5px; color:var(--txt-dim); margin-bottom:5px; }
+  .field input, .field select{
+    /* font-size ต้อง ≥16px ไม่งั้น iOS Safari จะซูมหน้าจอเองตอนแตะช่องกรอก */
+    width:100%; font-family:var(--font-b); font-size:16px; padding:12px 12px;
+    background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:9px; color:var(--txt);
+  }
+  .field input:focus, .field select:focus{ outline:none; border-color:var(--sky); }
+  .form-note{ font-size:12.5px; color:var(--txt-dim); margin-top:2px; }
+  .err{ color:#ffb4ae; font-size:13px; min-height:18px; margin-top:6px; }
+
+  .howto{ background:rgba(0,0,0,.22); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-top:16px; }
+  .howto li{ list-style:none; font-size:14px; line-height:2; padding-left:26px; position:relative; color:var(--txt); }
+  .howto li b{ color:#fff; }
+  .howto li::before{ content:attr(data-i); position:absolute; left:0; }
+
+  .mini-links{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:16px; }
+  .mini-links button{ background:none; color:var(--txt-dim); font-size:12.5px; text-decoration:underline; padding:4px; }
+  .mini-links button:hover{ color:var(--sky); }
+
+  /* ---------- HUD ---------- */
+  .hud{ display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    background:rgba(0,0,0,.32); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:10px; }
+  .hud-who{ font-family:var(--font-d); font-size:13.5px; color:#fff; }
+  .hud-who small{ display:block; font-family:var(--font-b); font-size:11.5px; color:var(--txt-dim); }
+  .focus-wrap{ flex:1; min-width:180px; }
+  .focus-top{ display:flex; justify-content:space-between; font-size:12px; color:var(--txt-dim); margin-bottom:4px; }
+  .focus-top b{ font-family:var(--font-d); color:var(--amber); font-size:14px; }
+  .focus-bar{ height:11px; background:rgba(0,0,0,.45); border-radius:99px; overflow:hidden; border:1px solid var(--line); }
+  .focus-fill{ height:100%; width:100%; border-radius:99px; background:linear-gradient(90deg,#8bc34a,#cddc39); transition:width .45s ease, background .45s; }
+  .focus-fill.mid{ background:linear-gradient(90deg,#ffb74d,#ffd54f); }
+  .focus-fill.low{ background:linear-gradient(90deg,#ef5350,#ff8a65); }
+  .hud-side{ display:flex; align-items:center; gap:8px; }
+  .hud-time{ font-family:var(--font-d); font-size:13px; color:var(--txt-dim); }
+  .icon-btn{ background:rgba(255,255,255,.06); border:1px solid var(--line); color:var(--txt); width:34px; height:34px; border-radius:9px; font-size:15px; }
+
+  .bag{ display:flex; gap:7px; flex-wrap:wrap; }
+  .bag-item{ font-size:17px; width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.05); border:1px dashed var(--line); filter:grayscale(1); opacity:.35; }
+  .bag-item.have{ filter:none; opacity:1; border:1px solid var(--amber); background:rgba(255,183,77,.14); }
+  .bag-item.used{ filter:grayscale(1); opacity:.3; border-style:dotted; }
+
+  /* ---------- map ---------- */
+  #map{
+    position:relative; width:100%; aspect-ratio:16/10; border-radius:14px; overflow:hidden;
+    cursor:crosshair;
+    border:1px solid var(--line); box-shadow:inset 0 0 90px rgba(0,0,0,.55), 0 14px 34px rgba(0,0,0,.4);
+    background:
+      linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(180deg, rgba(255,255,255,.028) 1px, transparent 1px) 0 0/40px 40px,
+      radial-gradient(circle at 50% 46%, rgba(176,133,245,.18), transparent 45%),
+      linear-gradient(160deg,#20406b,#132238);
+    touch-action:none; user-select:none;
+  }
+  .field-green{ position:absolute; border-radius:12px; background:rgba(139,195,74,.13); border:1px dashed rgba(139,195,74,.35); }
+  .path{ position:absolute; background:rgba(255,255,255,.05); border-radius:4px; }
+  .bldg{
+    position:absolute; transform:translate(-50%,-50%); border-radius:12px;
+    background:linear-gradient(165deg, rgba(255,255,255,.10), rgba(0,0,0,.25));
+    border:1px solid rgba(255,255,255,.14); pointer-events:none;
+  }
+  /* ตัวละครผู้เล่น: วงแหวนวาดด้วย CSS + อิโมจิรหัสเดี่ยว
+     วงแหวนทำให้มองเห็นตำแหน่งตัวเองได้เสมอ แม้ฟอนต์อิโมจิจะไม่รองรับ */
+  #player{
+    position:absolute; transform:translate(-50%,-50%); z-index:6;
+    width:var(--avatar); height:var(--avatar); display:flex; align-items:center; justify-content:center;
+  }
+  #player::before{
+    content:''; position:absolute; inset:0; border-radius:50%;
+    background:radial-gradient(circle at 50% 38%, rgba(79,195,247,.55), rgba(79,195,247,.06) 72%);
+    border:2px solid var(--sky); box-shadow:0 0 16px rgba(79,195,247,.65), 0 4px 8px rgba(0,0,0,.5);
+  }
+  #player .me{
+    position:relative; font-size:calc(var(--avatar) * .57); line-height:1;
+    filter:drop-shadow(0 3px 4px rgba(0,0,0,.7));
+    transition:transform .12s;
+  }
+  #player.walk .me{ animation:bob .34s infinite ease-in-out; }
+  @keyframes bob{ 0%,100%{ margin-top:0; } 50%{ margin-top:-5px; } }
+  #you-are-here{
+    position:absolute; transform:translate(-50%,-50%); z-index:7; white-space:nowrap;
+    font-family:var(--font-d); font-size:11.5px; color:#cfe9f9;
+    background:rgba(8,14,24,.85); border:1px solid var(--sky); padding:2px 9px; border-radius:20px;
+    animation:fadeOutHint .6s ease 4.4s forwards;
+  }
+  @keyframes fadeOutHint{ to{ opacity:0; visibility:hidden; } }
+
+  .zone{
+    position:absolute; transform:translate(-50%,-50%); z-index:4;
+    width:var(--zone-size); height:var(--zone-size); border-radius:16px;
+    font-size:calc(var(--zone-size) * .42); padding:0;
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(165deg, var(--panel-2), #16273c);
+    border:2px solid var(--sky-dim); color:#fff;
+    box-shadow:0 0 0 0 rgba(79,195,247,.5); animation:ping 2.6s infinite;
+  }
+  @keyframes ping{ 0%{ box-shadow:0 0 0 0 rgba(79,195,247,.45);} 70%{ box-shadow:0 0 0 14px rgba(79,195,247,0);} 100%{ box-shadow:0 0 0 0 rgba(79,195,247,0);} }
+  .zone .tag{
+    position:absolute; top:calc(100% + 6px); left:50%; transform:translateX(-50%);
+    font-size:11.5px; white-space:nowrap; color:#cfe9f9; background:rgba(0,0,0,.6);
+    padding:2px 8px; border-radius:20px; border:1px solid var(--line); font-family:var(--font-d);
+  }
+  .zone.done{ border-color:var(--lime); animation:none; background:linear-gradient(165deg,#2f5230,#16281a); }
+  .zone.done::after{
+    content:"✔"; position:absolute; top:-7px; right:-7px; width:22px; height:22px; border-radius:50%;
+    background:var(--lime); color:#12240a; font-size:13px; display:flex; align-items:center; justify-content:center; font-weight:700;
+  }
+  .zone.near{ border-color:var(--amber); transform:translate(-50%,-50%) scale(1.1); }
+  .zone.boss{ border-color:var(--violet); background:linear-gradient(165deg,#3c2a5a,#1c1230); }
+  .zone.boss.locked{ opacity:.45; filter:grayscale(.8); animation:none; border-color:var(--line); }
+  .zone.boss.ready{ animation:ping 1.3s infinite; border-color:var(--violet); opacity:1; filter:none; }
+
+  #prompt{
+    position:absolute; left:50%; bottom:12px; transform:translateX(-50%); z-index:8;
+    background:rgba(8,14,24,.92); border:1px solid var(--amber); color:#ffe0b2;
+    padding:9px 18px; border-radius:24px; font-size:13.5px; font-family:var(--font-d);
+    display:none; align-items:center; gap:8px; white-space:nowrap; box-shadow:0 6px 20px rgba(0,0,0,.5);
+  }
+  #prompt.show{ display:flex; }
+  #prompt{ cursor:pointer; }
+  #prompt:active{ filter:brightness(1.2); }
+  #prompt kbd{ background:var(--amber); color:#3a2405; padding:1px 8px; border-radius:5px; font-family:var(--font-d); }
+  #prompt .tap{ display:none; }   /* ข้อความสำหรับจอสัมผัส เปิดใน @media */
+
+  .controls{ display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-top:12px; flex-wrap:wrap; }
+  .dpad{ display:grid; grid-template-columns:repeat(3,var(--dpad)); grid-template-rows:repeat(2,var(--dpad)); gap:7px; }
+  .dpad button{ background:var(--panel-2); border:1px solid var(--line); border-radius:11px; color:var(--txt); font-size:17px; }
+  .dpad button:active{ background:var(--sky); color:var(--ink); }
+  .dpad .u{ grid-column:2; grid-row:1; } .dpad .l{ grid-column:1; grid-row:2; }
+  .dpad .d{ grid-column:2; grid-row:2; } .dpad .r{ grid-column:3; grid-row:2; }
+  .hint-line{ font-size:12.5px; color:var(--txt-dim); }
+
+  /* ---------- modal ---------- */
+  #overlay{ display:none; position:fixed; inset:0; background:rgba(4,8,14,.82); backdrop-filter:blur(3px);
+    z-index:60; padding:14px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+  #overlay.open{ display:flex; align-items:flex-start; justify-content:center; }
+  #modal{
+    background:linear-gradient(170deg,var(--paper),var(--paper-2)); color:var(--ink);
+    border-radius:16px; width:100%; max-width:720px; margin:auto; padding:22px 22px 24px;
+    box-shadow:0 24px 60px rgba(0,0,0,.6); position:relative;
+  }
+  #modal.wide{ max-width:860px; }
+  #close{ position:absolute; top:10px; right:12px; background:none; font-size:20px; color:#5b6675; padding:4px 8px; }
+  #close:hover{ color:var(--ink); }
+  .m-eyebrow{ font-family:var(--font-d); font-size:12px; letter-spacing:1.5px; color:#7a6a3a; }
+  .m-title{ font-family:var(--font-d); font-size:21px; color:#1b2a3d; margin:2px 0 10px; }
+  .story{ font-size:14.5px; line-height:1.85; color:#3d4a5c; background:#fff; border-left:4px solid var(--sky-dim);
+    padding:12px 14px; border-radius:0 10px 10px 0; margin-bottom:14px; }
+  .task{ font-size:14.5px; font-weight:600; color:#3a2c05; background:#fff3d6; border:1px solid #e6c77a;
+    padding:11px 14px; border-radius:10px; margin-bottom:14px; }
+  .stage-pill{ display:inline-block; font-size:12px; font-family:var(--font-d); background:#dfe8f3; color:#31485f;
+    padding:3px 11px; border-radius:20px; margin-bottom:8px; }
+
+  /* hints */
+  .hints{ margin-bottom:14px; }
+  .hint-btns{ display:flex; gap:8px; flex-wrap:wrap; }
+  .hint-btns button{
+    font-size:12.5px; font-family:var(--font-d); padding:7px 12px; border-radius:20px;
+    background:#fff; border:1px solid #c9b98a; color:#6b5a20;
+  }
+  .hint-btns button:hover:not(:disabled){ background:#fff6dd; }
+  .hint-btns button:disabled{ opacity:.4; cursor:default; }
+  .hint-box{ font-size:13.5px; line-height:1.8; background:#fffbee; border:1px solid #e3d6a6;
+    border-left:4px solid var(--amber); padding:10px 13px; border-radius:0 8px 8px 0; margin-top:9px; color:#4a3f1c; }
+  .hint-box b{ color:#7a5c00; }
+
+  .fb{ font-size:14px; font-weight:600; padding:11px 14px; border-radius:10px; margin:12px 0; line-height:1.7; }
+  .fb.ok{ background:#dff2df; color:#255c25; border:1px solid #a8d5a8; }
+  .fb.no{ background:#fbe0e0; color:#8f2727; border:1px solid #e8b0b0; }
+  .fb.info{ background:#e2edf8; color:#2b4a68; border:1px solid #b3cee7; }
+  .m-actions{ display:flex; gap:9px; flex-wrap:wrap; margin-top:6px; }
+
+  /* pick list */
+  .picks{ display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+  .pick{ display:flex; gap:11px; align-items:center; background:#fff; border:2px solid #dcd6c4;
+    padding:11px 13px; border-radius:10px; font-size:14px; cursor:pointer; line-height:1.5; }
+  .pick:hover{ border-color:#b9c9da; }
+  .pick .box{ width:21px; height:21px; min-width:21px; border-radius:6px; border:2px solid #b9b3a0; background:#faf8f2;
+    display:flex; align-items:center; justify-content:center; font-size:13px; color:transparent; }
+  .pick.on{ border-color:var(--sky-dim); background:#eaf6fd; }
+  .pick.on .box{ background:var(--sky-dim); border-color:var(--sky-dim); color:#fff; }
+  .pick.right{ border-color:#5b9c5b; background:#e6f5e6; }
+  .pick.wrong{ border-color:#cc6b6b; background:#fbeaea; }
+  .pick .why{ display:block; font-size:12.5px; color:#6b7280; margin-top:3px; }
+
+  /* order puzzle */
+  .order-wrap{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:12px; }
+  .order-col h4{ font-family:var(--font-d); font-size:13px; color:#4a5a6d; margin-bottom:7px; }
+  .order-pool, .order-slots{ display:flex; flex-direction:column; gap:7px; min-height:60px;
+    background:#fff; border:2px dashed #d5cfbc; border-radius:10px; padding:9px; }
+  .ord{ background:#f2f6fa; border:1px solid #cfdae6; border-radius:8px; padding:9px 11px; font-size:13.5px;
+    cursor:pointer; line-height:1.45; display:flex; gap:8px; align-items:flex-start; }
+  .ord:hover{ background:#e6eef7; }
+  .ord .n{ font-family:var(--font-d); font-size:12px; background:var(--sky-dim); color:#fff;
+    width:20px; height:20px; min-width:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .ord.right{ background:#e6f5e6; border-color:#8fc08f; }
+  .ord.wrong{ background:#fbeaea; border-color:#dda2a2; }
+  .empty-note{ font-size:12.5px; color:#98a2b3; text-align:center; padding:10px 0; }
+
+  /* sequence */
+  .seq{ display:flex; gap:9px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+  .seq .cell{ min-width:56px; height:52px; padding:0 10px; background:#fff; border:2px solid #d8d2c0; border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:17px; font-family:var(--font-d); color:#2b3a4d; }
+  .seq .cell.q{ border-style:dashed; border-color:var(--amber); background:#fff8e6; color:#b07d15; font-size:22px; }
+  .opts{ display:flex; gap:9px; flex-wrap:wrap; }
+  .opts button{ min-width:66px; padding:12px 14px; font-size:16px; font-family:var(--font-d);
+    background:#fff; border:2px solid #cfdae6; border-radius:10px; color:#2b3a4d; }
+  .opts button:hover:not(:disabled){ background:#eaf6fd; border-color:var(--sky-dim); }
+  .opts button.right{ background:#dff2df; border-color:#5b9c5b; }
+  .opts button.wrong{ background:#fbe0e0; border-color:#cc6b6b; }
+
+  /* data table */
+  .tbl{ width:100%; border-collapse:collapse; margin-bottom:12px; font-size:13.5px; background:#fff;
+    border-radius:10px; overflow:hidden; border:1px solid #dcd6c4; }
+  .tbl th{ background:#e8eef5; color:#31485f; font-family:var(--font-d); font-weight:500; padding:9px 8px; font-size:12.5px; }
+  .tbl td{ padding:9px 8px; text-align:center; border-top:1px solid #eee7d8; color:#2b3a4d; }
+  .tbl tr td:first-child{ text-align:left; font-weight:600; }
+  .table-scroll{ overflow-x:auto; margin-bottom:12px; }
+
+  /* choices */
+  .choices{ display:flex; flex-direction:column; gap:9px; }
+  .choices button{ text-align:left; background:#fff; border:2px solid #d5dfe9; border-radius:10px;
+    padding:12px 14px; font-size:14px; color:#26313f; line-height:1.6; }
+  .choices button:hover:not(:disabled){ background:#eef6fd; border-color:var(--sky-dim); }
+  .choices button.right{ background:#dff2df; border-color:#5b9c5b; }
+  .choices button.wrong{ background:#fbe0e0; border-color:#cc6b6b; }
+  .choices button.dim{ opacity:.35; }
+
+  /* robot grid */
+  .robo{ display:grid; grid-template-columns:minmax(220px,300px) 1fr; gap:16px; align-items:start; }
+  .grid-box{ position:relative; width:100%; aspect-ratio:1; background:#2c3e50; border-radius:12px; padding:5px; }
+  .cells{ display:grid; width:100%; height:100%; gap:3px; }
+  .cell-t{ background:#e9eef4; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .cell-t.wall{ background:#5d6d7e; }
+  .cell-t.goal{ background:#ffe08a; }
+  .cell-t.start{ background:#d7ecd7; }
+  #robot{ position:absolute; font-size:20px; transition:left .28s ease, top .28s ease;
+    transform:translate(-50%,-50%); z-index:3; display:flex; flex-direction:column; align-items:center; line-height:1; }
+  #robot .ar{ font-size:11px; transition:transform .28s ease; }
+  .prog{ min-height:70px; background:#fff; border:2px dashed #d5cfbc; border-radius:10px; padding:9px;
+    display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
+  .blk{ background:#eaf2fb; border:1px solid #b8cee6; border-radius:18px; padding:5px 11px; font-size:12.5px;
+    display:flex; gap:6px; align-items:center; color:#28405c; }
+  .blk.edit{ cursor:pointer; background:#fff1d9; border-color:#e2bf7c; }
+  .blk.edit:hover{ background:#ffe6ba; }
+  .blk.cur{ background:#d9f0d9; border-color:#7fb27f; }
+  .blk .i{ font-size:11px; color:#8a97a6; }
+  .palette{ display:flex; gap:7px; flex-wrap:wrap; }
+  .palette button{ background:#fff; border:2px solid #cfdae6; border-radius:9px; padding:8px 11px; font-size:13px; color:#26313f; }
+  .palette button:hover{ background:#eaf6fd; }
+  .steps-left{ font-size:12.5px; color:#6b7280; margin-bottom:6px; }
+
+  /* boss */
+  .boss-top{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .boss-round{ font-family:var(--font-d); font-size:14px; color:#3d2a5c; background:#ece2fb; padding:5px 13px; border-radius:20px; }
+  .timer-wrap{ flex:1; min-width:140px; }
+  .timer-bar{ height:9px; background:#e2ddd0; border-radius:99px; overflow:hidden; }
+  .timer-fill{ height:100%; width:100%; background:linear-gradient(90deg,#8bc34a,#cddc39); transition:width .25s linear; }
+  .timer-fill.warn{ background:linear-gradient(90deg,#ffb74d,#ffd54f); }
+  .timer-fill.danger{ background:linear-gradient(90deg,#ef5350,#ff8a65); }
+  .timer-num{ font-family:var(--font-d); font-size:14px; color:#5b3a3a; min-width:44px; text-align:right; }
+  .items-bar{ display:flex; gap:7px; flex-wrap:wrap; margin-bottom:12px; }
+  .items-bar button{ background:#fff; border:1px solid #e0b96b; border-radius:20px; padding:6px 12px; font-size:12.5px; color:#6b4d10; }
+  .items-bar button:disabled{ opacity:.32; }
+  .concept-tag{ display:inline-block; font-size:11.5px; padding:2px 10px; border-radius:20px; background:#e6eef7; color:#3d5a75; margin-bottom:8px; }
+
+  /* result */
+  .score-hero{ text-align:center; padding:6px 0 2px; }
+  .score-num{ font-family:var(--font-d); font-size:58px; line-height:1; color:#fff; }
+  .score-num small{ font-size:20px; color:var(--txt-dim); }
+  .tier{ font-family:var(--font-d); font-size:19px; margin-top:8px; }
+  .tier.gold{ color:#ffd54f; } .tier.silver{ color:#cfd8dc; } .tier.fail{ color:#ff8a80; }
+  .stat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin:18px 0; }
+  .stat{ background:rgba(0,0,0,.25); border:1px solid var(--line); border-radius:12px; padding:12px; text-align:center; }
+  .stat b{ display:block; font-family:var(--font-d); font-size:20px; color:#fff; }
+  .stat span{ font-size:12px; color:var(--txt-dim); }
+  .breakdown{ background:rgba(0,0,0,.22); border:1px solid var(--line); border-radius:12px; padding:6px 14px; }
+  .brow{ display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,.07); font-size:13.5px; }
+  .brow:last-child{ border-bottom:none; }
+  .brow span:last-child{ color:var(--txt-dim); font-size:12.5px; text-align:right; }
+
+  /* certificate */
+  #certImg{ width:100%; max-width:100%; height:auto; border-radius:10px; box-shadow:0 14px 34px rgba(0,0,0,.5); display:block; }
+  .cert-hint{ font-size:13px; color:var(--txt-dim); line-height:1.85; }
+  .code-badge{ font-family:var(--font-d); font-size:17px; letter-spacing:2px; color:var(--amber);
+    background:rgba(255,183,77,.12); border:1px solid var(--amber); border-radius:10px; padding:9px 16px; display:inline-block; }
+
+  /* leaderboard */
+  .lb{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  .lb th{ text-align:left; font-family:var(--font-d); font-weight:500; font-size:12.5px; color:var(--txt-dim);
+    padding:8px 6px; border-bottom:1px solid var(--line); }
+  .lb td{ padding:9px 6px; border-bottom:1px solid rgba(255,255,255,.06); }
+  .lb tr.me td{ background:rgba(79,195,247,.10); }
+  .rank{ font-family:var(--font-d); color:var(--amber); }
+
+  /* toast */
+  #toast{ position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(16px); z-index:200;
+    background:#0d1622; border:1px solid var(--sky-dim); color:var(--txt); padding:11px 20px; border-radius:24px;
+    font-size:13.5px; opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; max-width:92vw; text-align:center; }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .fly{ position:fixed; z-index:210; font-family:var(--font-d); font-size:19px; pointer-events:none;
+    animation:flyUp 1.1s ease-out forwards; }
+  @keyframes flyUp{ 0%{opacity:1; transform:translateY(0);} 100%{opacity:0; transform:translateY(-52px);} }
+
+  /* =====================================================================
+     จอเล็ก / มือถือ
+     ===================================================================== */
+  @media (max-width:820px){
+    body{ padding:10px 9px calc(26px + env(safe-area-inset-bottom)); }
+    .card{ padding:16px 14px; border-radius:14px; }
+    .lede{ font-size:14.5px; line-height:1.85; }
+    .howto{ padding:12px 13px; }
+    .howto li{ font-size:13.5px; line-height:1.9; padding-left:24px; }
+    .form-grid{ grid-template-columns:1fr 1fr; gap:10px; }
+    .form-grid .field:first-child{ grid-column:1/-1; }
+    .robo{ grid-template-columns:1fr; }
+    .grid-box{ max-width:330px; margin:0 auto; }
+    .order-wrap{ grid-template-columns:1fr; }
+
+    /* --- HUD: บีบให้อยู่ 2 แถวพอดี ไม่กินพื้นที่แผนที่ --- */
+    .hud{ gap:8px; padding:8px 10px; }
+    .hud-who{ font-size:12.5px; }
+    .hud-who small{ font-size:11px; }
+    .focus-wrap{ min-width:130px; }
+    .bag{ order:3; width:100%; justify-content:center; }
+    .hud-side{ margin-left:auto; }
+
+    /* --- แผนที่: กำหนดความสูงตามจอแทนสัดส่วน 16:10 เพื่อให้ปุ่มเดินอยู่ในจอเดียวกัน
+           (dvh = ความสูงจริงหลังหักแถบเบราว์เซอร์บนมือถือ) --- */
+    #map{ aspect-ratio:auto; height:46vh; height:46dvh; min-height:250px; }
+    .zone .tag{ font-size:10.5px; padding:2px 7px; }
+    #prompt{ font-size:12.5px; padding:10px 14px; bottom:10px;
+             max-width:92%; white-space:normal; text-align:center; line-height:1.5; }
+    #prompt kbd{ display:none; }          /* มือถือไม่มีคีย์บอร์ด */
+    #prompt .tap{ display:inline; }
+    #you-are-here{ font-size:10.5px; }
+
+    /* --- ปุ่มทิศทาง: ใหญ่ขึ้นให้กดด้วยนิ้วโป้งได้ --- */
+    .controls{ justify-content:center; gap:14px; margin-top:14px; }
+    .dpad button{ font-size:20px; }
+    .hint-line{ width:100%; text-align:center; font-size:12px; order:-1; line-height:1.7; }
+
+    /* --- หน้าต่างโจทย์ --- */
+    #overlay{ padding:8px 8px calc(8px + env(safe-area-inset-bottom)); }
+    #modal{ padding:18px 14px 20px; border-radius:14px; }
+    #close{ top:6px; right:6px; font-size:24px; padding:8px 12px; }
+    .m-title{ font-size:19px; padding-right:34px; }
+    .story, .task{ font-size:14px; padding:11px 12px; }
+    .m-actions{ gap:8px; }
+    .m-actions .btn{ flex:1 1 44%; }
+
+    /* --- ทุกอย่างที่ต้องแตะ ต้องไม่เล็กกว่านิ้ว (~44px) --- */
+    .choices button, .opts button{ min-height:50px; }
+    .pick{ min-height:52px; padding:12px 13px; }
+    .pick .box{ width:24px; height:24px; min-width:24px; }
+    .hint-btns button, .palette button, .items-bar button{
+      min-height:42px; padding:10px 14px; font-size:13px; }
+    .blk{ padding:9px 13px; font-size:13px; }
+    .blk.edit{ min-height:40px; }
+    .ord{ padding:13px 12px; font-size:13.5px; }
+    .order-pool, .order-slots{ min-height:70px; }
+    .seq{ gap:7px; }
+    .seq .cell{ min-width:48px; height:48px; font-size:15px; padding:0 8px; }
+    .seq .cell.q{ font-size:20px; }
+    .tbl{ font-size:12.5px; }
+    .tbl th, .tbl td{ padding:8px 6px; }
+    .icon-btn{ width:40px; height:40px; }
+
+    /* --- หน้าผลคะแนน / เกียรติบัตร --- */
+    .score-num{ font-size:48px; }
+    .stat-grid{ grid-template-columns:repeat(2,1fr); }
+    .brow{ flex-direction:column; gap:2px; }
+    .brow span:last-child{ text-align:left; }
+    .code-badge{ font-size:15px; letter-spacing:1.5px; padding:9px 12px; }
+  }
+
+  @media (max-width:400px){
+    :root{ --zone-size:46px; --avatar:34px; --dpad:58px; }
+    .title{ font-size:22px; }
+    .chip{ font-size:11.5px; padding:5px 10px; }
+    .chip-row{ gap:6px; }
+    .m-actions .btn{ flex:1 1 100%; }
+  }
+  @media (min-width:401px) and (max-width:820px){
+    :root{ --zone-size:52px; --avatar:38px; --dpad:60px; }
+  }
+
+  /* มือถือแนวนอน: จอเตี้ยมาก ให้แผนที่สูงขึ้นและปุ่มเล็กลง */
+  @media (orientation:landscape) and (max-height:560px){
+    :root{ --dpad:46px; --zone-size:46px; --avatar:34px; }
+    #map{ height:58vh; height:58dvh; min-height:190px; }
+    .hud{ padding:6px 10px; }
+    .controls{ margin-top:8px; }
+    #overlay{ align-items:flex-start; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ================= START ================= -->
+  <section id="s-start" class="screen active">
+    <div class="card">
+      <div class="hero">
+        <div class="eyebrow">วิทยาการคำนวณ · ชั้นมัธยมศึกษาปีที่ 4</div>
+        <h1 class="title">ภารกิจ 5 วัน <span>กู้วิกฤตโรงเรียน</span></h1>
+        <p class="lede">อีก 5 วันโรงเรียนจะมีงานใหญ่ แต่ทุกฝ่ายกำลังวุ่นวายไปหมด<br>
+          คุณคือคณะกรรมการนักเรียนที่ต้องใช้ <b>แนวคิดเชิงคำนวณ</b> เข้าไปแก้ปัญหาทีละจุด</p>
+        <div class="chip-row">
+          <span class="chip">🧩 การแบ่งปัญหา</span>
+          <span class="chip">🔍 การหารูปแบบ</span>
+          <span class="chip">🗂️ การคิดเชิงนามธรรม</span>
+          <span class="chip">🤖 การออกแบบอัลกอริทึม</span>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="in-name">ชื่อ – นามสกุล (ใช้พิมพ์บนเกียรติบัตร)</label>
+          <input id="in-name" type="text" maxlength="60" placeholder="เช่น สมชาย ใจดี" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="in-room">ชั้น</label>
+          <select id="in-room"></select>
+        </div>
+        <div class="field">
+          <label for="in-no">เลขที่</label>
+          <input id="in-no" type="number" min="1" max="63" placeholder="เช่น 12">
+        </div>
+      </div>
+      <div class="err" id="start-err"></div>
+      <p class="form-note">💡 กรอกชื่อจริงของตัวเอง — ชื่อนี้จะถูกพิมพ์ลงบนเกียรติบัตรและส่งถึงครู</p>
+
+      <ul class="howto">
+        <li data-i="🎮"><b>เดิน</b>สำรวจโรงเรียน — <b>มือถือ:</b> แตะหรือลากนิ้วบนแผนที่ตรงจุดที่อยากไป (หรือใช้ปุ่มทิศทางใต้แผนที่) · <b>คอม:</b> ปุ่มลูกศร / W A S D</li>
+        <li data-i="📍">เดินเข้าใกล้อาคาร แล้ว<b>แตะแถบสีเหลือง</b>ที่ขึ้นมา (คอมกด <b>E</b>) เพื่อเข้าไปแก้ปัญหา — หรือแตะที่ตัวอาคารตรง ๆ ก็ได้</li>
+        <li data-i="⚡">คุณมี <b>พลังสมาธิ 100</b> — ขอคำใบ้หรือตอบผิดจะเสียพลัง <b>พลังที่เหลือคือคะแนน</b></li>
+        <li data-i="🎒">แก้ปัญหาสำเร็จจะได้ <b>ไอเทม</b> เก็บไว้ใช้ตอนสู้กับด่านสุดท้าย</li>
+        <li data-i="🏅">ได้ <b>70 คะแนนขึ้นไป</b> จึงจะรับเกียรติบัตรไปส่งใน Classroom ได้</li>
+      </ul>
+
+      <div style="text-align:center; margin-top:20px;">
+        <button class="btn" onclick="beginGame()">🚀 เริ่มภารกิจ</button>
+      </div>
+
+      <div class="mini-links">
+        <button onclick="showLeaderboard()">🏆 กระดานคะแนน</button>
+        <button onclick="showVerify()">🔎 สำหรับครู: ตรวจรหัสเกียรติบัตร</button>
+        <button onclick="toggleSound()" id="sound-link">🔊 เสียง: เปิด</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MAP ================= -->
+  <section id="s-map" class="screen">
+    <div class="hud">
+      <div class="hud-who" id="hud-who">—<small>—</small></div>
+      <div class="focus-wrap">
+        <div class="focus-top"><span>⚡ พลังสมาธิ</span><b id="focus-num">100</b></div>
+        <div class="focus-bar"><div class="focus-fill" id="focus-fill"></div></div>
+      </div>
+      <div class="bag" id="bag"></div>
+      <div class="hud-side">
+        <span class="hud-time" id="hud-time">00:00</span>
+        <button class="icon-btn" id="btn-sound" onclick="toggleSound()" title="เปิด/ปิดเสียง">🔊</button>
+        <button class="icon-btn" onclick="quitToStart()" title="ออก / เปลี่ยนผู้เล่น">⏻</button>
+      </div>
+    </div>
+
+    <div id="map" tabindex="0"></div>
+
+    <div class="controls">
+      <div class="dpad">
+        <button class="u" data-dir="up">▲</button>
+        <button class="l" data-dir="left">◀</button>
+        <button class="d" data-dir="down">▼</button>
+        <button class="r" data-dir="right">▶</button>
+      </div>
+      <div class="hint-line" id="map-hint">แตะบนแผนที่เพื่อเดินไปยังอาคารที่ยังไม่มีเครื่องหมายถูก แล้วแตะแถบสีเหลืองเพื่อเข้าไปแก้ปัญหา</div>
+    </div>
+  </section>
+
+  <!-- ================= RESULT ================= -->
+  <section id="s-result" class="screen"><div class="card" id="result-body"></div></section>
+
+  <!-- ================= CERTIFICATE ================= -->
+  <section id="s-cert" class="screen"><div class="card" id="cert-body"></div></section>
+
+  <!-- ================= LEADERBOARD ================= -->
+  <section id="s-lb" class="screen"><div class="card" id="lb-body"></div></section>
+
+  <!-- ================= VERIFY ================= -->
+  <section id="s-verify" class="screen"><div class="card" id="verify-body"></div></section>
+
+</div>
+
+<div id="overlay"><div id="modal"><button id="close" onclick="closeModal()" aria-label="ปิด">✕</button><div id="mbody"></div></div></div>
+<div id="toast"></div>
+
+<script>
+/* =====================================================================
+   ตั้งค่าสำหรับครู — แก้ 4 บรรทัดนี้ให้เป็นข้อมูลจริงของโรงเรียน
+   ===================================================================== */
+const CONFIG = {
+  schoolName : 'โรงเรียน อบจ.เมืองภูเก็ต',
+  teacherName: 'ครูภานุพงศ์ หนูจร',
+  subject    : 'รายวิชา วิทยาการคำนวณ 1 ว31102',
+  activity   : 'ภารกิจ 5 วันกู้วิกฤตโรงเรียน : แนวคิดเชิงคำนวณ',
+  passScore  : 70,   // คะแนนขั้นต่ำที่จะได้เกียรติบัตร
+  goldScore  : 85    // คะแนนที่ได้ระดับ "ทอง"
+};
+const CERT_SALT = 'CT-M4-KRU-2569';   // เปลี่ยนได้ ถ้าเปลี่ยนแล้วรหัสเก่าจะตรวจไม่ผ่าน
+
+/* =====================================================================
+   สถานะเกม
+   ===================================================================== */
+const ZONES = [
+  { id:'decomp',  x:20, y:26, icon:'🏟️', name:'โรงยิม',      concept:'การแบ่งปัญหา',        item:'hourglass' },
+  { id:'pattern', x:80, y:24, icon:'📚', name:'ห้องสมุด',     concept:'การหารูปแบบ',         item:'lens' },
+  { id:'abstract',x:19, y:76, icon:'🍜', name:'โรงอาหาร',     concept:'การคิดเชิงนามธรรม',   item:'coffee' },
+  { id:'algo',    x:81, y:74, icon:'💻', name:'ห้องคอมพิวเตอร์', concept:'การออกแบบอัลกอริทึม', item:'headset' },
+  { id:'boss',    x:50, y:50, icon:'🏛️', name:'หอประชุม',     concept:'รวมทุกแนวคิด',        item:null }
+];
+
+const ITEMS = {
+  hourglass:{ icon:'⏳', name:'นาฬิกาจับเวลา', desc:'เพิ่มเวลาให้ข้อปัจจุบัน 20 วินาที' },
+  lens     :{ icon:'🔍', name:'แว่นขยาย',       desc:'ตัดตัวเลือกที่ผิดออก 2 ข้อ' },
+  coffee   :{ icon:'🥤', name:'ชาเย็นโรงอาหาร', desc:'คืนพลังสมาธิ 8 หน่วย' },
+  headset  :{ icon:'🎧', name:'หูฟังตัดเสียง',  desc:'ข้ามคำถาม 1 ข้อโดยไม่เสียพลัง' }
+};
+
+const COSTS = { hint:[1,2,3], wrong:2, bossWrong:3, bossTimeout:3 };
+
+let G = null;   // เกมปัจจุบัน
+
+function newGame(player){
+  return {
+    player,                       // {name, room, no}
+    focus: 100,
+    startedAt: Date.now(),
+    endedAt: null,
+    variant: {                    // สุ่มชุดโจทย์
+      decomp: rnd(3), pattern: rnd(3), abstract: rnd(3), algo: rnd(3)
+    },
+    zones: { decomp:mkZ(), pattern:mkZ(), abstract:mkZ(), algo:mkZ(), boss:mkZ() },
+    bag: {},                      // itemId -> 'have' | 'used'
+    hintsUsed: 0,
+    wrongs: 0,
+    log: []
+  };
+}
+function mkZ(){ return { done:false, stage:0, hints:0, wrongs:0, spent:0 }; }
+function rnd(n){ return Math.floor(Math.random()*n); }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function shuffle(a){ const b=a.slice(); for(let i=b.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; } return b; }
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* =====================================================================
+   ที่เก็บข้อมูลแบบปลอดภัย
+   Apps Script เสิร์ฟหน้าเว็บอยู่ใน iframe — บางเบราว์เซอร์ (โดยเฉพาะ Safari
+   บน iPhone ที่ปิดคุกกี้ของบุคคลที่สาม) จะ "โยน error" ทันทีที่แตะ localStorage
+   ถ้าไม่ดักไว้ สคริปต์ทั้งไฟล์จะตายตั้งแต่บรรทัดแรกและนักเรียนจะเห็นจอขาว
+   ===================================================================== */
+const LS = (function(){
+  let ok = false; const mem = {};
+  try{ localStorage.setItem('__ct_test','1'); localStorage.removeItem('__ct_test'); ok = true; }catch(e){ ok = false; }
+  return {
+    available: ok,
+    get(k){ try{ return ok ? localStorage.getItem(k) : (k in mem ? mem[k] : null); }catch(e){ return (k in mem ? mem[k] : null); } },
+    set(k,v){ try{ if(ok) localStorage.setItem(k,v); else mem[k] = v; }catch(e){ mem[k] = v; } },
+    del(k){ try{ if(ok) localStorage.removeItem(k); else delete mem[k]; }catch(e){ delete mem[k]; } }
+  };
+})();
+
+/* =====================================================================
+   สะพานเชื่อม Google Apps Script
+   ถ้าเปิดไฟล์นี้แบบธรรมดา (ดับเบิลคลิกจากเครื่อง) google.script.run จะไม่มี
+   ทุกอย่างจะทำงานต่อได้ปกติ เพียงแต่ไม่ส่งคะแนนขึ้นชีตเท่านั้น
+   ===================================================================== */
+const ONLINE = !!(window.google && window.google.script && window.google.script.run);
+
+function submitScore(rec, done){
+  if(!ONLINE){ if(done) done(null); return; }
+  try{
+    google.script.run
+      .withSuccessHandler(r => { if(done) done(r); })
+      .withFailureHandler(e => { console.warn('saveScore failed:', e); if(done) done(null); })
+      .saveScore(rec);
+  }catch(e){ console.warn(e); if(done) done(null); }
+}
+function fetchBoard(cb){
+  if(!ONLINE){ cb(null); return; }
+  try{
+    google.script.run
+      .withSuccessHandler(rows => cb(rows))
+      .withFailureHandler(e => { console.warn('getBoard failed:', e); cb(null); })
+      .getBoard();
+  }catch(e){ console.warn(e); cb(null); }
+}
+
+/* =====================================================================
+   เสียง (WebAudio เล็ก ๆ ไม่ต้องโหลดไฟล์)
+   ===================================================================== */
+let soundOn = LS.get('ct_sound') !== 'off';
+let actx = null;
+
+/* iOS/Android จะไม่ยอมให้เล่นเสียงจนกว่าผู้ใช้จะแตะหน้าจอครั้งแรก
+   จึงต้อง "ปลดล็อก" AudioContext ตอนแตะครั้งแรก ไม่งั้นเกมจะเงียบทั้งเกม */
+function unlockAudio(){
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if(actx.state === 'suspended') actx.resume();
+  }catch(e){}
+}
+document.addEventListener('pointerdown', unlockAudio, { once:true });
+document.addEventListener('touchstart',  unlockAudio, { once:true, passive:true });
+
+function beep(freq, dur, type, vol){
+  if(!soundOn) return;
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if(actx.state === 'suspended') actx.resume();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type || 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol || .07, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + (dur||.15));
+    o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + (dur||.15));
+  }catch(e){}
+}
+const SFX = {
+  good:  ()=>{ beep(660,.10,'triangle'); setTimeout(()=>beep(880,.16,'triangle'),90); },
+  bad:   ()=>{ beep(200,.22,'sawtooth',.05); },
+  click: ()=>{ beep(420,.05,'square',.03); },
+  win:   ()=>{ [523,659,784,1046].forEach((f,i)=> setTimeout(()=>beep(f,.20,'triangle'), i*110)); },
+  item:  ()=>{ beep(880,.08,'sine'); setTimeout(()=>beep(1175,.18,'sine'),80); },
+  tick:  ()=>{ beep(300,.04,'square',.025); }
+};
+function toggleSound(){
+  soundOn = !soundOn;
+  unlockAudio();
+  LS.set('ct_sound', soundOn ? 'on' : 'off');
+  const t = soundOn ? '🔊' : '🔇';
+  const b = document.getElementById('btn-sound'); if(b) b.textContent = t;
+  const l = document.getElementById('sound-link'); if(l) l.textContent = (soundOn?'🔊 เสียง: เปิด':'🔇 เสียง: ปิด');
+  if(soundOn) SFX.click();
+}
+
+/* =====================================================================
+   Toast / เอฟเฟกต์คะแนนลอย
+   ===================================================================== */
+let toastT = null;
+function toast(msg, ms){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(()=> el.classList.remove('show'), ms || 2400);
+}
+function flyText(text, color){
+  const el = document.createElement('div');
+  el.className = 'fly'; el.textContent = text; el.style.color = color || '#ff8a80';
+  const anchor = document.getElementById('focus-num') || document.body;
+  const r = anchor.getBoundingClientRect();
+  el.style.left = (r.left + r.width/2 - 20) + 'px';
+  el.style.top  = (r.top - 6) + 'px';
+  document.body.appendChild(el);
+  setTimeout(()=> el.remove(), 1150);
+}
+
+/* =====================================================================
+   พลังสมาธิ
+   ===================================================================== */
+function spendFocus(amount, reason, zoneId){
+  if(amount <= 0) return;
+  G.focus = Math.max(0, G.focus - amount);
+  if(zoneId && G.zones[zoneId]) G.zones[zoneId].spent += amount;
+  G.log.push({ t:Date.now(), reason, amount });
+  updateHUD();
+  flyText('−' + amount, '#ff8a80');
+  if(G.focus <= 25) toast('⚠️ พลังสมาธิเหลือน้อยแล้ว (' + G.focus + ') — ลองคิดเองก่อนขอคำใบ้');
+}
+function gainFocus(amount, reason){
+  G.focus = Math.min(100, G.focus + amount);
+  G.log.push({ t:Date.now(), reason, amount:-amount });
+  updateHUD();
+  flyText('+' + amount, '#b9f6ca');
+}
+function updateHUD(){
+  const n = document.getElementById('focus-num'); if(!n) return;
+  n.textContent = G.focus;
+  const f = document.getElementById('focus-fill');
+  f.style.width = G.focus + '%';
+  f.className = 'focus-fill' + (G.focus < 40 ? ' low' : G.focus < 70 ? ' mid' : '');
+  renderBag();
+}
+function renderBag(){
+  const el = document.getElementById('bag'); if(!el) return;
+  el.innerHTML = ['hourglass','lens','coffee','headset'].map(id=>{
+    const st = G.bag[id];
+    const cls = st === 'have' ? 'have' : st === 'used' ? 'used' : '';
+    const title = ITEMS[id].name + ' — ' + ITEMS[id].desc + (st==='used' ? ' (ใช้แล้ว)' : st==='have' ? '' : ' (ยังไม่ได้รับ)');
+    return `<div class="bag-item ${cls}" title="${esc(title)}">${ITEMS[id].icon}</div>`;
+  }).join('');
+}
+
+/* =====================================================================
+   นำทางหน้าจอ
+   ===================================================================== */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=> s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* =====================================================================
+   หน้าเริ่ม
+   ===================================================================== */
+(function initStart(){
+  const sel = document.getElementById('in-room');
+  sel.innerHTML = '<option value="">— เลือก —</option>' +
+    Array.from({length:12}, (_,i)=> `<option value="${i+1}">ม.4/${i+1}</option>`).join('');
+  let last = null;
+  try{ last = JSON.parse(LS.get('ct_last') || 'null'); }catch(e){ last = null; }
+  if(last){ document.getElementById('in-room').value = last.room || ''; }
+  ['in-name','in-no'].forEach(id=>{
+    document.getElementById(id).addEventListener('keydown', e=>{
+      if(e.key === 'Enter'){ e.preventDefault(); beginGame(); }
+    });
+  });
+  const s = document.getElementById('sound-link');
+  if(s) s.textContent = soundOn ? '🔊 เสียง: เปิด' : '🔇 เสียง: ปิด';
+  const b = document.getElementById('btn-sound'); if(b) b.textContent = soundOn ? '🔊' : '🔇';
+})();
+
+function beginGame(){
+  const name = document.getElementById('in-name').value.trim().replace(/\s+/g,' ');
+  const room = parseInt(document.getElementById('in-room').value, 10);
+  const no   = parseInt(document.getElementById('in-no').value, 10);
+  const err  = document.getElementById('start-err');
+  if(name.length < 4 || !name.includes(' ')){
+    err.textContent = '⚠️ กรุณากรอกชื่อและนามสกุล โดยเว้นวรรคระหว่างชื่อกับนามสกุล'; return;
+  }
+  if(!room){ err.textContent = '⚠️ กรุณาเลือกชั้นเรียน'; return; }
+  if(!no || no < 1 || no > 63){ err.textContent = '⚠️ กรุณากรอกเลขที่ (1–63)'; return; }
+  err.textContent = '';
+  LS.set('ct_last', JSON.stringify({ room }));
+
+  G = newGame({ name, room, no });
+  document.getElementById('hud-who').innerHTML =
+    esc(name) + '<small>ม.4/' + room + ' เลขที่ ' + no + '</small>';
+  buildMap();
+  updateHUD();
+  showScreen('s-map');
+  try{ document.getElementById('map').focus({ preventScroll:true }); }catch(e){}
+  startClock();
+  SFX.click();
+  setTimeout(openIntro, 350);
+}
+
+/* ใช้หน้าต่างของเกมแทน confirm() ของเบราว์เซอร์
+   เพราะกล่อง confirm มาตรฐานถูกบล็อกหรือแสดงผลเพี้ยนใน iframe ของ Apps Script
+   และบนมือถือก็อ่านยากกว่ามาก */
+let pendingConfirm = null;
+function askConfirm(title, msg, yesLabel, onYes){
+  pendingConfirm = onYes;
+  openModal(`
+    <h2 class="m-title">${title}</h2>
+    <div class="fb no">${msg}</div>
+    <div class="m-actions">
+      <button class="btn amber" onclick="runConfirm()">${yesLabel}</button>
+      <button class="btn ghost" onclick="cancelConfirm()">↩︎ ยกเลิก</button>
+    </div>`);
+}
+function runConfirm(){ const f = pendingConfirm; pendingConfirm = null; closeModal(); if(f) f(); }
+function cancelConfirm(){ pendingConfirm = null; closeModal(); }
+
+function quitToStart(){
+  askConfirm('⏻ ออกจากภารกิจ?',
+    'ความคืบหน้าของรอบนี้จะหายไปทั้งหมด และคะแนนจะยังไม่ถูกบันทึก',
+    '⏻ ออก กลับหน้าแรก', doQuitToStart);
+}
+function doQuitToStart(){
+  stopClock(); G = null; closeModal(); showScreen('s-start');
+  document.getElementById('in-name').value = '';
+  document.getElementById('in-no').value = '';
+}
+
+function openIntro(){
+  openModal(`
+    <div class="m-eyebrow">วันจันทร์ · 08:10 น.</div>
+    <h2 class="m-title">📢 ประกาศจากห้องกิจการนักเรียน</h2>
+    <div class="story">
+      “อีก 5 วันโรงเรียนเราจะมีงานใหญ่ แต่ตอนนี้มีปัญหาค้างอยู่ 4 จุด —
+      <b>โรงยิม</b> จัดงานไม่ทัน, <b>ห้องสมุด</b> ตารางเวรมั่วไปหมด,
+      <b>โรงอาหาร</b> สั่งอาหารผิดทุกวัน และ <b>ห้องคอม</b> หุ่นยนต์ส่งเอกสารเดินชนโต๊ะ<br><br>
+      ครูมอบหมายให้พวกเธอเข้าไปแก้ทีละจุด แก้ครบแล้วมาเจอกันที่ <b>หอประชุม</b>
+      เพื่อรับมือกับด่านสุดท้าย… <b>สัปดาห์ส่งงาน</b>”
+    </div>
+    <div class="task">🎯 แก้ปัญหาให้ครบทั้ง 4 อาคาร แล้วเข้าหอประชุม · รักษาพลังสมาธิให้เหลือ ${CONFIG.passScore} ขึ้นไปเพื่อรับเกียรติบัตร</div>
+    <div class="m-actions"><button class="btn" onclick="closeModal()">เริ่มเดินสำรวจ →</button></div>
+  `);
+}
+
+/* =====================================================================
+   นาฬิกา
+   ===================================================================== */
+let clockT = null;
+function startClock(){
+  stopClock();
+  clockT = setInterval(()=>{
+    const el = document.getElementById('hud-time'); if(!el || !G) return;
+    el.textContent = fmtTime(Math.floor((Date.now() - G.startedAt)/1000));
+  }, 1000);
+}
+function stopClock(){ if(clockT){ clearInterval(clockT); clockT = null; } }
+function fmtTime(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+/* =====================================================================
+   แผนที่โรงเรียน + การเดิน
+   ===================================================================== */
+const player = { x:50, y:88 };
+const keys = new Set();
+const SPEED = 0.72, NEAR = 9;
+let nearZone = null, loopOn = false;
+let moveTarget = null;     // จุดที่นิ้ว/เมาส์สั่งให้เดินไป (หน่วย % ของแผนที่)
+let dragging   = false;
+let lastFrame  = 0;        // ใช้คิดความเร็วตามเวลาจริง ไม่ให้จอ 120Hz เดินเร็วเป็น 2 เท่า
+
+function buildMap(){
+  const map = document.getElementById('map');
+  map.innerHTML = `
+    <div class="field-green" style="left:36%; top:16%; width:28%; height:20%;"></div>
+    <div class="path" style="left:8%;  top:48%; width:84%; height:3.2%;"></div>
+    <div class="path" style="left:48.4%; top:12%; width:3.2%; height:76%;"></div>
+    <div class="bldg" style="left:20%; top:26%; width:26%; height:22%;"></div>
+    <div class="bldg" style="left:80%; top:24%; width:26%; height:22%;"></div>
+    <div class="bldg" style="left:19%; top:76%; width:26%; height:22%;"></div>
+    <div class="bldg" style="left:81%; top:74%; width:26%; height:22%;"></div>
+    <div class="bldg" style="left:50%; top:50%; width:24%; height:22%;"></div>
+    <div id="player"><span class="me">🚶</span></div>
+    <div id="you-are-here">▲ คุณอยู่ตรงนี้</div>
+    <div id="prompt" role="button" tabindex="0" onclick="promptEnter()"><kbd>E</kbd><span class="tap">👉</span><span id="prompt-text">เข้าไปแก้ปัญหา</span></div>
+  ` + ZONES.map(z=>`
+    <button class="zone ${z.id==='boss'?'boss locked':''}" id="z-${z.id}"
+      style="left:${z.x}%; top:${z.y}%;" onclick="enterZone('${z.id}')">
+      ${z.icon}<span class="tag">${z.name}</span>
+    </button>`).join('');
+  player.x = 50; player.y = 88;
+  nearZone = null; keys.clear(); moveTarget = null; dragging = false;
+  positionPlayer();
+  if(!loopOn){ loopOn = true; requestAnimationFrame(loop); }
+}
+
+function positionPlayer(){
+  const el = document.getElementById('player'); if(!el) return;
+  el.style.left = player.x + '%';
+  el.style.top  = player.y + '%';
+  const tag = document.getElementById('you-are-here');   // ป้ายลอยตามตัวละคร
+  if(tag){ tag.style.left = player.x + '%'; tag.style.top = (player.y - 6) + '%'; }
+}
+
+function normKey(k){
+  return ({ arrowup:'up', arrowdown:'down', arrowleft:'left', arrowright:'right',
+            w:'up', s:'down', a:'left', d:'right' })[k.toLowerCase()];
+}
+window.addEventListener('keydown', e=>{
+  if(document.getElementById('overlay').classList.contains('open')) return;
+  if(!document.getElementById('s-map').classList.contains('active')) return;
+  const dir = normKey(e.key);
+  if(dir){ e.preventDefault(); keys.add(dir); moveTarget = null; }
+  if(e.key.toLowerCase() === 'e' && nearZone){ e.preventDefault(); enterZone(nearZone); }
+});
+window.addEventListener('keyup', e=>{ const d = normKey(e.key); if(d) keys.delete(d); });
+window.addEventListener('blur', ()=>{ keys.clear(); dragging = false; });
+
+/* ---------------------------------------------------------------------
+   ปุ่มทิศทางบนจอ — ใช้ Pointer Events ชุดเดียวคุมทั้งนิ้วและเมาส์
+   ของเดิมผสม mouse* กับ touch* ไว้ ทำให้บนมือถือบางรุ่นปุ่ม "ค้าง"
+   (touchend ยิงแต่ mouseleave ไม่ยิง ตัวละครจึงเดินไม่หยุด)
+   setPointerCapture ทำให้เลื่อนนิ้วออกนอกปุ่มแล้วยังได้ pointerup เสมอ
+   --------------------------------------------------------------------- */
+document.querySelectorAll('.dpad button').forEach(b=>{
+  const dir = b.dataset.dir;
+  b.addEventListener('pointerdown', e=>{
+    e.preventDefault();
+    try{ b.setPointerCapture(e.pointerId); }catch(_){}
+    keys.add(dir); moveTarget = null; unlockAudio();
+  });
+  ['pointerup','pointercancel'].forEach(ev=>
+    b.addEventListener(ev, e=>{ e.preventDefault(); keys.delete(dir); }));
+});
+window.addEventListener('pointerup',     ()=>{ keys.clear(); dragging = false; });
+window.addEventListener('pointercancel', ()=>{ keys.clear(); dragging = false; });
+
+/* ---------------------------------------------------------------------
+   แตะ / ลากนิ้วบนแผนที่เพื่อเดิน (โหมดหลักของมือถือ)
+   แตะครั้งเดียว = เดินไปหยุดตรงนั้น · ลากนิ้วค้าง = ตัวละครตามนิ้วไปเรื่อย ๆ
+   --------------------------------------------------------------------- */
+function mapPct(map, ev){
+  const r = map.getBoundingClientRect();
+  if(!r.width || !r.height) return null;
+  return {
+    x: Math.min(95, Math.max(5, (ev.clientX - r.left) / r.width  * 100)),
+    y: Math.min(93, Math.max(8, (ev.clientY - r.top ) / r.height * 100))
+  };
+}
+(function initMapPointer(){
+  const map = document.getElementById('map');
+  const aim = ev=>{ const p = mapPct(map, ev); if(p){ moveTarget = p; keys.clear(); } };
+  map.addEventListener('pointerdown', e=>{
+    // แตะที่ตัวอาคารหรือแถบ "เข้าไปแก้ปัญหา" ให้ปุ่มนั้นทำงานของมันไป
+    if(e.target.closest('.zone') || e.target.closest('#prompt')) return;
+    e.preventDefault(); unlockAudio();
+    dragging = true;
+    try{ map.setPointerCapture(e.pointerId); }catch(_){}
+    aim(e);
+  });
+  map.addEventListener('pointermove', e=>{ if(dragging) aim(e); });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=>
+    map.addEventListener(ev, ()=>{ dragging = false; }));
+})();
+
+/* แตะแถบสีเหลืองใต้แผนที่ = เท่ากับกด E บนคอมพิวเตอร์ */
+function promptEnter(){ if(nearZone) enterZone(nearZone); }
+
+function loop(ts){
+  // ระยะเวลาต่อเฟรม เทียบกับ 60fps — จอ 90/120Hz จะได้ความเร็วเท่ากับจอ 60Hz
+  const k = lastFrame ? Math.min(3, (ts - lastFrame) / 16.7) : 1;
+  lastFrame = ts;
+  if(G && document.getElementById('s-map').classList.contains('active')
+     && !document.getElementById('overlay').classList.contains('open')){
+    step(k);
+  } else {
+    moveTarget = null; dragging = false;
+  }
+  requestAnimationFrame(loop);
+}
+
+function step(k){
+  let dx = 0, dy = 0;
+  if(keys.has('up')) dy--; if(keys.has('down')) dy++;
+  if(keys.has('left')) dx--; if(keys.has('right')) dx++;
+  if(!dx && !dy && moveTarget){
+    const tx = moveTarget.x - player.x, ty = moveTarget.y - player.y;
+    if(Math.hypot(tx, ty) < 1.4) moveTarget = null;   // ถึงจุดหมายแล้ว
+    else { dx = tx; dy = ty; }
+  }
+  const el = document.getElementById('player');
+  if(dx || dy){
+    const L = Math.hypot(dx,dy); dx/=L; dy/=L;
+    player.x = Math.min(95, Math.max(5, player.x + dx*SPEED*k));
+    player.y = Math.min(93, Math.max(8, player.y + dy*SPEED*k));
+    positionPlayer();
+    if(el){
+      el.classList.add('walk');
+      const me = el.querySelector('.me');   // พลิกเฉพาะตัวละคร ไม่พลิกวงแหวน
+      if(me) me.style.transform = 'scaleX(' + (dx < 0 ? -1 : 1) + ')';
+    }
+  } else if(el){ el.classList.remove('walk'); }
+  checkNear();
+}
+
+function checkNear(){
+  let found = null;
+  for(const z of ZONES){
+    if(Math.hypot(player.x - z.x, player.y - z.y) < NEAR){ found = z.id; break; }
+  }
+  if(found === nearZone) return;
+  if(nearZone){ const p = document.getElementById('z-'+nearZone); if(p) p.classList.remove('near'); }
+  nearZone = found;
+  const prompt = document.getElementById('prompt');
+  if(found){
+    const z = ZONES.find(v=> v.id === found);
+    document.getElementById('z-'+found).classList.add('near');
+    const done = G.zones[found].done;
+    const locked = found === 'boss' && !allSolved();
+    document.getElementById('prompt-text').textContent =
+      locked ? 'ยังเข้าไม่ได้ — ต้องแก้ครบ 4 อาคารก่อน'
+             : done ? z.name + ' (แก้เรียบร้อยแล้ว)'
+                    : 'เข้า ' + z.name + ' — ' + z.concept;
+    prompt.classList.add('show');
+  } else {
+    prompt.classList.remove('show');
+  }
+}
+
+function allSolved(){ return ['decomp','pattern','abstract','algo'].every(k=> G.zones[k].done); }
+
+/* =====================================================================
+   Modal
+   ===================================================================== */
+function openModal(html, wide){
+  document.getElementById('mbody').innerHTML = html;
+  document.getElementById('modal').className = wide ? 'wide' : '';
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('overlay').scrollTop = 0;
+  document.body.classList.add('modal-open');   // กันหน้าหลังกล่องเลื่อนตามนิ้ว
+}
+function closeModal(){
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('mbody').innerHTML = '';
+  document.body.classList.remove('modal-open');
+  keys.clear(); moveTarget = null; dragging = false;
+  if(bossTimer){ clearInterval(bossTimer); bossTimer = null; }
+}
+/* ใช้ click แทน mousedown — บนมือถือ การ "ลากเพื่อเลื่อนดูโจทย์"
+   จะไม่ทำให้กล่องปิดโดยไม่ตั้งใจ */
+document.getElementById('overlay').addEventListener('click', e=>{
+  if(e.target.id === 'overlay' && !modalLocked) closeModal();
+});
+let modalLocked = false;
+
+/* =====================================================================
+   คลังโจทย์ · ด่าน 1 โรงยิม — การแบ่งปัญหา (Decomposition)
+   ===================================================================== */
+const DECOMP = [
+  {
+    story:'ครูพละยื่นกระดาษให้คุณ “กีฬาสีระดับชั้น ม.4 อีก 3 สัปดาห์ ครูให้พวกเธอจัดกันเอง” แล้วก็เดินออกไป… กระดาษมีคำเดียวว่า <b>“จัดกีฬาสีให้เรียบร้อย”</b>',
+    mission:'จัดกีฬาสีระดับชั้น ม.4 ภายใน 3 สัปดาห์',
+    picks:[
+      { t:'จัดตารางแข่งขันของกีฬาแต่ละชนิด', ok:true,  why:'ขนาดพอเหมาะ ทำเสร็จได้จริง และจำเป็นต่อภารกิจ' },
+      { t:'ทำให้กีฬาสีปีนี้ประสบความสำเร็จ', ok:false, why:'กว้างเกินไป — พูดซ้ำโจทย์เดิม ยังไม่บอกว่าต้องลงมือทำอะไร' },
+      { t:'รวบรวมรายชื่อนักกีฬาของแต่ละห้อง', ok:true,  why:'เป็นงานที่มีจุดเริ่มจุดจบชัดเจน' },
+      { t:'หยิบปากกาขึ้นมา 1 ด้าม', ok:false, why:'ย่อยเกินไปจนไม่มีความหมาย ไม่ใช่ “งาน” ที่ต้องวางแผน' },
+      { t:'จองสนามและยืมอุปกรณ์กีฬากับฝ่ายอาคาร', ok:true, why:'งานย่อยที่ชัดเจนและต้องทำจริง' },
+      { t:'ปรับปรุงหลักสูตรพลศึกษาทั้งโรงเรียน', ok:false, why:'ไม่เกี่ยวกับภารกิจนี้ และเกินอำนาจของนักเรียน' },
+      { t:'จัดเวรกรรมการและผู้จดคะแนนแต่ละสนาม', ok:true, why:'จำเป็นและมอบหมายต่อได้ทันที' },
+      { t:'ทำให้ทุกคนในโรงเรียนมีความสุข', ok:false, why:'วัดผลไม่ได้ ไม่รู้ว่าทำเสร็จเมื่อไหร่' }
+    ],
+    order:[
+      'สำรวจว่ามีกี่ห้อง และแข่งกีฬากี่ชนิด',
+      'จองสนามและยืมอุปกรณ์ตามชนิดกีฬา',
+      'เปิดรับสมัครนักกีฬาของแต่ละห้อง',
+      'จัดตารางแข่งขันจากรายชื่อที่ได้',
+      'ประกาศตารางแข่งให้ทุกห้องทราบ'
+    ],
+    orderWhy:'ต้องรู้ “ขนาดของงาน” ก่อน จึงจองสนามได้ถูก แล้วจึงรับสมัคร → มีรายชื่อแล้วถึงจัดตารางได้ → สุดท้ายจึงประกาศ'
+  },
+  {
+    story:'หัวหน้ากลุ่มสาระเรียกคุณเข้าไปคุย “อีก 3 สัปดาห์เราจะจัด <b>งานเปิดบ้าน (Open House)</b> ให้ผู้ปกครองและน้อง ม.3 มาชม ครูอยากให้นักเรียนช่วยวางแผน แต่ตอนนี้ครูมีแค่คำว่า ‘จัดงานให้ดี’”',
+    mission:'จัดงานเปิดบ้านของกลุ่มสาระ ภายใน 3 สัปดาห์',
+    picks:[
+      { t:'สำรวจพื้นที่โถงอาคารว่าวางบูธได้กี่บูธ', ok:true,  why:'เป็นงานที่ลงมือทำได้ทันทีและรู้ผลชัด' },
+      { t:'ทำให้โรงเรียนมีชื่อเสียงระดับประเทศ', ok:false, why:'ใหญ่เกินภารกิจ และไม่ได้อยู่ในการควบคุมของทีม' },
+      { t:'รวบรวมผลงานนักเรียนที่จะนำมาจัดแสดง', ok:true,  why:'ขอบเขตชัด รู้ว่าเสร็จเมื่อได้ผลงานครบ' },
+      { t:'เดินไปเปิดไฟในห้องโถง', ok:false, why:'ย่อยเกินไป เป็นแค่ขั้นตอนเล็กในงานอื่น' },
+      { t:'จัดเวรนักเรียนประจำบูธแต่ละช่วงเวลา', ok:true,  why:'มอบหมายต่อได้ และจำเป็นในวันงานจริง' },
+      { t:'เขียนแผนพัฒนาโรงเรียน 5 ปี', ok:false, why:'คนละเรื่องกับภารกิจนี้' },
+      { t:'เตรียมป้ายชื่อบูธและสื่อแนะนำ', ok:true,  why:'งานย่อยที่ทำเสร็จได้จริงในไม่กี่ขั้นตอน' },
+      { t:'ทำให้ผู้ปกครองทุกคนประทับใจ', ok:false, why:'เป็นความรู้สึก วัดไม่ได้ว่าเสร็จหรือยัง' }
+    ],
+    order:[
+      'สำรวจพื้นที่ว่าวางได้กี่บูธ',
+      'รวบรวมผลงานที่จะนำมาจัดแสดง',
+      'ออกแบบผังบูธจากผลงานที่มี',
+      'จัดเวรนักเรียนประจำแต่ละบูธ',
+      'ประชาสัมพันธ์วันงานให้ผู้ปกครองและน้อง ม.3'
+    ],
+    orderWhy:'รู้พื้นที่ก่อน → รู้ว่ามีผลงานเท่าไร → จึงออกแบบผังได้ → มีผังแล้วจึงจัดเวรคน → สุดท้ายจึงประชาสัมพันธ์'
+  },
+  {
+    story:'ครูที่ปรึกษาบอกกลางห้อง “ระดับชั้นเราจะไป <b>ทัศนศึกษา 1 วัน</b> เดือนหน้า ครูให้คณะกรรมการห้องช่วยจัดการ” แล้วเขียนบนกระดานว่า “จัดทัศนศึกษา” คำเดียว',
+    mission:'จัดทัศนศึกษา 1 วันของระดับชั้น ม.4',
+    picks:[
+      { t:'สำรวจจำนวนนักเรียนที่ไปได้จริงในวันนั้น', ok:true, why:'เป็นข้อมูลตั้งต้นที่งานอื่นต้องใช้ต่อ' },
+      { t:'ทำให้นักเรียนรักการเรียนรู้ตลอดชีวิต', ok:false, why:'เป็นเป้าหมายกว้างมาก ไม่ใช่งานที่ทำเสร็จได้ใน 1 ทริป' },
+      { t:'จัดทำและเก็บใบอนุญาตจากผู้ปกครอง', ok:true, why:'มีจุดจบชัดเจน: ได้ใบครบทุกคน' },
+      { t:'กดปุ่มส่งอีเมล 1 ครั้ง', ok:false, why:'ย่อยเกินไป เป็นเพียงการกระทำเล็ก ๆ ไม่ใช่งานย่อย' },
+      { t:'ติดต่อเช่ารถบัสตามจำนวนคนที่ไป', ok:true, why:'ทำได้จริงและจำเป็นต่อทริป' },
+      { t:'เปลี่ยนนโยบายการศึกษาของจังหวัด', ok:false, why:'อยู่นอกขอบเขตงานโดยสิ้นเชิง' },
+      { t:'วางกำหนดการเวลาของแต่ละจุดที่ไปชม', ok:true, why:'ผลลัพธ์เป็นตารางที่ตรวจสอบได้' },
+      { t:'ทำให้วันนั้นอากาศดี', ok:false, why:'ควบคุมไม่ได้ ไม่ควรเป็นงานย่อยในแผน' }
+    ],
+    order:[
+      'สำรวจจำนวนนักเรียนที่จะไปจริง',
+      'ขอและรวบรวมใบอนุญาตจากผู้ปกครอง',
+      'เช่ารถบัสตามจำนวนคนที่ยืนยันแล้ว',
+      'วางกำหนดการเวลาแต่ละจุด',
+      'แจ้งกำหนดการและจุดนัดพบให้ทุกคน'
+    ],
+    orderWhy:'จำนวนคนคือข้อมูลตั้งต้น → ยืนยันด้วยใบอนุญาต → จึงเช่ารถได้พอดี → แล้วจึงวางเวลา → ปิดท้ายด้วยการแจ้งทุกคน'
+  }
+];
+
+/* =====================================================================
+   คลังโจทย์ · ด่าน 2 ห้องสมุด — การหารูปแบบ (Pattern Recognition)
+   ===================================================================== */
+const PATTERN = [
+  {
+    story:'บรรณารักษ์ชี้ไปที่กระดานเวร “ตารางเวรกับตารางรถรับส่งมันเละไปหมด แต่ครูว่ามันมี <b>แบบแผน</b> ซ่อนอยู่นะ ลองหาดูสิ”',
+    rounds:[
+      { q:'รถโรงเรียนรอบเช้าออกเวลา', seq:['06:30','06:50','07:10','07:30','?'], opts:['07:40','07:45','07:50','08:00'], ans:'07:50',
+        why:'รถออกห่างกันครั้งละ 20 นาทีเสมอ (06:30 → 06:50 → 07:10 → 07:30 → 07:50)' },
+      { q:'เลขที่ที่ต้องเวรน้ำดื่มในแต่ละสัปดาห์', seq:['2','5','8','11','?'], opts:['12','13','14','15'], ans:'14',
+        why:'เลขที่เพิ่มขึ้นครั้งละ 3 (2 → 5 → 8 → 11 → 14)' },
+      { q:'จำนวนเล่มที่ถูกยืมในแต่ละวันของสัปดาห์', seq:['1','1','2','3','5','8','?'], opts:['11','12','13','16'], ans:'13',
+        why:'แต่ละวันเท่ากับผลบวกของสองวันก่อนหน้า (5 + 8 = 13)' }
+    ],
+    table:{
+      title:'จำนวนนักเรียนที่ขึ้นรถโรงเรียนรอบเช้า',
+      head:['สัปดาห์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์'],
+      rows:[['สัปดาห์ 1','42','45','44','46','30'],['สัปดาห์ 2','41','46','43','47','29'],['สัปดาห์ 3','43','44','45','46','?']],
+      q:'ข้อใดคือ “แบบแผน” ที่อธิบายข้อมูลชุดนี้ได้ถูกต้องที่สุด',
+      opts:[
+        'จำนวนคนเพิ่มขึ้นเรื่อย ๆ ทุกวันตลอดสัปดาห์',
+        'วันศุกร์มีคนขึ้นรถน้อยกว่าวันอื่นอย่างชัดเจนในทุกสัปดาห์',
+        'จำนวนคนในสัปดาห์ที่ 2 มากกว่าสัปดาห์ที่ 1 ทุกวัน',
+        'ไม่มีแบบแผนใด ๆ ตัวเลขสุ่มไปมา'
+      ],
+      ans:1,
+      why:'วันจันทร์–พฤหัสอยู่ราว 41–47 คน แต่วันศุกร์ตกลงมาเหลือราว 29–30 คนทุกสัปดาห์ — นั่นคือรูปแบบที่ซ้ำ',
+      predictQ:'ถ้ารูปแบบเดิมยังคงอยู่ วันศุกร์ของสัปดาห์ที่ 3 น่าจะมีประมาณกี่คน',
+      predictOpts:['30','38','44','47'], predictAns:0
+    }
+  },
+  {
+    story:'ฝ่ายประชาสัมพันธ์เดินมาหา “คลิปแนะนำโรงเรียนที่เราลงไว้ ยอดวิวมันขึ้น ๆ ลง ๆ อยากรู้ว่ามันมีจังหวะของมันไหม จะได้ลงคลิปถูกเวลา”',
+    rounds:[
+      { q:'ยอดแชร์ของโพสต์ในแต่ละชั่วโมง', seq:['2','4','8','16','?'], opts:['20','24','32','64'], ans:'32',
+        why:'ยอดเพิ่มเป็น 2 เท่าทุกชั่วโมง (16 × 2 = 32)' },
+      { q:'จำนวนผู้ติดตามที่เพิ่มขึ้นในแต่ละสัปดาห์', seq:['100','150','200','250','?'], opts:['275','280','300','350'], ans:'300',
+        why:'เพิ่มขึ้นครั้งละ 50 อย่างสม่ำเสมอ' },
+      { q:'จำนวนคอมเมนต์ในแต่ละวัน', seq:['1','4','9','16','?'], opts:['20','24','25','36'], ans:'25',
+        why:'เป็นกำลังสองของลำดับที่ (1², 2², 3², 4², 5² = 25)' }
+    ],
+    table:{
+      title:'ยอดวิวคลิปประชาสัมพันธ์ (หน่วย: ครั้ง)',
+      head:['สัปดาห์','จ','อ','พ','พฤ','ศ','ส','อา'],
+      rows:[['สัปดาห์ 1','120','110','130','125','180','410','395'],
+            ['สัปดาห์ 2','115','125','120','135','190','430','380'],
+            ['สัปดาห์ 3','130','120','125','130','185','?','?']],
+      q:'ข้อใดคือ “แบบแผน” ที่อธิบายข้อมูลชุดนี้ได้ถูกต้องที่สุด',
+      opts:[
+        'ยอดวิวเพิ่มขึ้นทุกวันแบบคงที่',
+        'วันเสาร์–อาทิตย์มียอดวิวสูงกว่าวันจันทร์–พฤหัสประมาณ 3 เท่า',
+        'วันจันทร์เป็นวันที่ยอดวิวสูงที่สุดเสมอ',
+        'ยอดวิวลดลงเรื่อย ๆ ทุกสัปดาห์'
+      ],
+      ans:1,
+      why:'จันทร์–พฤหัสอยู่ราว 110–135 ส่วนเสาร์–อาทิตย์พุ่งไป 380–430 ซึ่งราว 3 เท่า และเกิดซ้ำทุกสัปดาห์',
+      predictQ:'ถ้ารูปแบบเดิมยังคงอยู่ ควรลงคลิปใหม่วันใดจึงจะได้ยอดวิวมากที่สุด',
+      predictOpts:['วันจันทร์','วันพุธ','วันศุกร์','วันเสาร์'], predictAns:3
+    }
+  },
+  {
+    story:'ครูวางสมุดคะแนนลงบนโต๊ะ “ครูอยากรู้ว่าใครกำลังพัฒนาขึ้นจริง ๆ ไม่ใช่แค่ฟลุ๊กครั้งเดียว ลองดูตัวเลขแล้วบอกครูหน่อย”',
+    rounds:[
+      { q:'คะแนนเก็บของเบสในแต่ละครั้ง', seq:['3','6','12','24','?'], opts:['30','36','48','60'], ans:'48',
+        why:'คะแนนเพิ่มเป็น 2 เท่าทุกครั้ง (24 × 2 = 48)' },
+      { q:'ลำดับที่นั่งสอบของห้อง ม.4/2', seq:['5','10','15','20','?'], opts:['22','24','25','30'], ans:'25',
+        why:'เพิ่มขึ้นครั้งละ 5 อย่างสม่ำเสมอ' },
+      { q:'จำนวนข้อที่ทำผิดในแต่ละสัปดาห์', seq:['20','17','14','11','?'], opts:['7','8','9','10'], ans:'8',
+        why:'ลดลงครั้งละ 3 ทุกสัปดาห์ (11 − 3 = 8)' }
+    ],
+    table:{
+      title:'คะแนนสอบเก็บ 5 ครั้ง (เต็มครั้งละ 10 คะแนน)',
+      head:['ชื่อ','ครั้งที่ 1','ครั้งที่ 2','ครั้งที่ 3','ครั้งที่ 4','ครั้งที่ 5'],
+      rows:[['ฟ้า','4','5','6','7','8'],['กัน','9','4','9','3','9'],['มิ้น','7','7','7','7','7']],
+      q:'ข้อใดคือ “แบบแผน” ที่อธิบายข้อมูลชุดนี้ได้ถูกต้องที่สุด',
+      opts:[
+        'ฟ้าพัฒนาขึ้นอย่างสม่ำเสมอครั้งละ 1 คะแนน ส่วนกันขึ้น ๆ ลง ๆ และมิ้นคงที่',
+        'ทั้งสามคนมีคะแนนเพิ่มขึ้นเรื่อย ๆ',
+        'กันเป็นคนที่พัฒนาสม่ำเสมอที่สุด เพราะได้ 9 บ่อยที่สุด',
+        'มิ้นกำลังพัฒนาขึ้นเร็วที่สุด'
+      ],
+      ans:0,
+      why:'ฟ้า 4→5→6→7→8 เพิ่มทีละ 1 คงที่ · กันสลับสูงต่ำ 9,4,9,3,9 · มิ้นได้ 7 ทุกครั้งไม่เปลี่ยน',
+      predictQ:'ถ้ารูปแบบเดิมยังคงอยู่ ครั้งที่ 6 ฟ้าน่าจะได้กี่คะแนน',
+      predictOpts:['7','8','9','10'], predictAns:2
+    }
+  }
+];
+
+/* =====================================================================
+   คลังโจทย์ · ด่าน 3 โรงอาหาร — การคิดเชิงนามธรรม (Abstraction)
+   ===================================================================== */
+const ABSTRACT = [
+  {
+    story:'แม่ค้าโรงอาหารบ่นว่า “ทุกวันทำอาหารเหลือบ้างขาดบ้าง” ครูจึงให้พวกคุณออกแบบ <b>ระบบสั่งอาหารกลางวันล่วงหน้า</b> — แต่ก่อนอื่นต้องตัดสินใจว่าระบบต้องเก็บข้อมูลอะไรบ้าง',
+    mission:'ออกแบบระบบสั่งอาหารกลางวันล่วงหน้า',
+    need:5,
+    items:[
+      { t:'รหัส/เลขที่ผู้สั่ง', ok:true,  why:'ต้องรู้ว่าใครสั่ง จึงส่งอาหารให้ถูกคน' },
+      { t:'สีเสื้อที่ใส่วันนั้น', ok:false, why:'ไม่ได้ใช้ในการทำหรือส่งอาหาร' },
+      { t:'เมนูที่สั่ง', ok:true,  why:'เป็นแก่นของระบบ ถ้าไม่มีก็ทำอาหารไม่ได้' },
+      { t:'ส่วนสูงของนักเรียน', ok:false, why:'ไม่เกี่ยวกับการสั่งอาหาร' },
+      { t:'จำนวนที่สั่ง', ok:true,  why:'ต้องรู้จำนวนจึงเตรียมวัตถุดิบได้พอดี' },
+      { t:'เพลงที่ชอบฟัง', ok:false, why:'ไม่มีผลต่อการทำงานของระบบ' },
+      { t:'วันที่ต้องการรับอาหาร', ok:true, why:'ระบบเป็นการสั่งล่วงหน้า จึงต้องรู้ว่าเป็นของวันไหน' },
+      { t:'คะแนนสอบวิชาคณิตศาสตร์', ok:false, why:'ไม่เกี่ยวข้องเลยกับภารกิจนี้' },
+      { t:'ข้อมูลการแพ้อาหาร', ok:true,  why:'เกี่ยวข้องกับความปลอดภัยโดยตรง ตัดออกไม่ได้' },
+      { t:'ชื่อสัตว์เลี้ยงที่บ้าน', ok:false, why:'เป็นรายละเอียดที่ไม่จำเป็นต่อระบบ' }
+    ],
+    level:{
+      q:'คุณต้องอธิบายระบบนี้ให้ <b>แม่ค้าโรงอาหาร</b> ที่ไม่คุ้นกับคอมพิวเตอร์ฟัง ควรเลือกคำอธิบายแบบใด',
+      opts:[
+        'อธิบายโครงสร้างตารางฐานข้อมูล ชนิดข้อมูลของแต่ละคอลัมน์ และรูปแบบ API ที่ใช้รับคำสั่งซื้อ',
+        '“ทุกเช้าเปิดหน้าจอนี้ จะเห็นรายการอาหารที่ต้องทำวันนี้พร้อมจำนวน และมีเครื่องหมายเตือนคนที่แพ้อาหาร”',
+        '“มันคือระบบคอมพิวเตอร์ครับ” แล้วจบแค่นั้น'
+      ],
+      ans:1,
+      why:'การคิดเชิงนามธรรมคือการเลือก “ระดับรายละเอียดที่พอดีกับผู้ใช้” — ข้อ 1 ละเอียดเกินจนใช้ไม่ได้ ข้อ 3 ตัดทิ้งมากเกินจนไม่มีข้อมูลพอจะทำงาน ส่วนข้อ 2 บอกสิ่งที่แม่ค้าต้องรู้พอดี'
+    }
+  },
+  {
+    story:'ห้องสมุดจะเปลี่ยนจากบัตรกระดาษเป็น <b>บัตรนักเรียนดิจิทัลสำหรับยืมหนังสือ</b> ครูให้พวกคุณตัดสินใจว่าบัตรใบนี้ควรเก็บข้อมูลอะไร',
+    mission:'ออกแบบบัตรนักเรียนดิจิทัลสำหรับยืม–คืนหนังสือ',
+    need:5,
+    items:[
+      { t:'รหัสประจำตัวนักเรียน', ok:true,  why:'เป็นตัวระบุตัวตนหลักของระบบยืม–คืน' },
+      { t:'จำนวนผู้ติดตามในไอจี', ok:false, why:'ไม่มีบทบาทใด ๆ ในการยืมหนังสือ' },
+      { t:'ชื่อ – นามสกุล', ok:true,  why:'ใช้ยืนยันตัวตนและติดต่อเมื่อเกินกำหนดคืน' },
+      { t:'น้ำหนักตัว', ok:false, why:'ไม่เกี่ยวข้องกับการยืมหนังสือ' },
+      { t:'ระดับชั้นและห้อง', ok:true,  why:'ใช้ตามตัวและกำหนดสิทธิ์การยืมตามระดับชั้น' },
+      { t:'เพลงโปรด', ok:false, why:'เป็นรายละเอียดส่วนตัวที่ระบบไม่ต้องใช้' },
+      { t:'รายการหนังสือที่กำลังยืมอยู่', ok:true, why:'เป็นข้อมูลแกนกลางของระบบยืม–คืน' },
+      { t:'ยี่ห้อรองเท้าที่ใส่', ok:false, why:'ไม่เกี่ยวข้องกับภารกิจ' },
+      { t:'วันครบกำหนดคืน', ok:true, why:'ต้องมีเพื่อคิดค่าปรับและเตือนผู้ยืม' },
+      { t:'คะแนนสอบวิชาพลศึกษา', ok:false, why:'ไม่ได้ใช้ในระบบห้องสมุด' }
+    ],
+    level:{
+      q:'คุณต้องอธิบายวิธีใช้บัตรนี้ให้ <b>น้อง ม.1 ที่เพิ่งเข้าใหม่</b> ฟัง ควรเลือกคำอธิบายแบบใด',
+      opts:[
+        '“เอาบัตรแตะที่เครื่องตรงเคาน์เตอร์ แล้วหน้าจอจะบอกว่ายืมได้กี่เล่ม และต้องคืนวันไหน”',
+        'อธิบายว่าบัตรใช้คลื่น RFID ความถี่ 13.56 MHz อ่านค่า UID แล้วส่งไปเทียบกับฐานข้อมูลสมาชิก',
+        '“ก็แค่เอาบัตรมา” แล้วไม่บอกอะไรต่อ'
+      ],
+      ans:0,
+      why:'ผู้ใช้ต้องการรู้แค่ “ทำอะไร แล้วได้อะไร” — รายละเอียดทางเทคนิคของ RFID เป็นข้อมูลที่ควรถูกซ่อนไว้ ส่วนคำตอบสุดท้ายตัดทิ้งมากไปจนใช้งานไม่ได้'
+    }
+  },
+  {
+    story:'ครูที่ปรึกษาเบื่อการเช็กชื่อด้วยกระดาษ จึงให้พวกคุณออกแบบ <b>แอปเช็กชื่อเข้าเรียน</b> ให้ครูทุกคนใช้ร่วมกัน',
+    mission:'ออกแบบแอปเช็กชื่อเข้าเรียนของโรงเรียน',
+    need:5,
+    items:[
+      { t:'รหัสประจำตัวนักเรียน', ok:true,  why:'ใช้ระบุว่าใครมาเรียน โดยไม่สับสนกับคนชื่อซ้ำ' },
+      { t:'สีกระเป๋านักเรียน', ok:false, why:'ไม่มีผลต่อการบันทึกการเข้าเรียน' },
+      { t:'วันที่และคาบเรียน', ok:true,  why:'ต้องรู้ว่าเช็กของคาบไหน วันไหน' },
+      { t:'อาหารเช้าที่กินมา', ok:false, why:'ไม่เกี่ยวข้องกับการเช็กชื่อ' },
+      { t:'สถานะการเข้าเรียน (มา / สาย / ขาด / ลา)', ok:true, why:'เป็นผลลัพธ์หลักที่ระบบต้องบันทึก' },
+      { t:'จำนวนก้าวเดินวันนี้', ok:false, why:'เป็นข้อมูลสุขภาพ ไม่ใช่ข้อมูลการเข้าเรียน' },
+      { t:'รหัสวิชาที่เรียนในคาบนั้น', ok:true, why:'ครูคนละคนสอนคนละวิชา ต้องแยกให้ออก' },
+      { t:'ยี่ห้อโทรศัพท์ที่ใช้', ok:false, why:'ระบบไม่จำเป็นต้องรู้' },
+      { t:'ชื่อครูผู้บันทึก', ok:true, why:'ใช้ตรวจสอบย้อนหลังว่าใครเป็นผู้บันทึกข้อมูล' },
+      { t:'คะแนนเกมที่เล่นเมื่อคืน', ok:false, why:'ไม่เกี่ยวข้องกับภารกิจโดยสิ้นเชิง' }
+    ],
+    level:{
+      q:'คุณต้องอธิบายแอปนี้ให้ <b>ครูที่จะใช้งานจริงในคาบเรียน</b> ฟัง ควรเลือกคำอธิบายแบบใด',
+      opts:[
+        'อธิบายว่าแอปเก็บข้อมูลเป็น JSON ซิงก์ขึ้นเซิร์ฟเวอร์ทุก 30 วินาที และมีระบบแคชออฟไลน์',
+        '“ครูแค่เปิดแอป เลือกห้องกับคาบ แล้วแตะชื่อคนที่ขาด — ที่เหลือระบบบันทึกให้เอง”',
+        '“มันเช็กชื่อได้ครับ” แล้วไม่บอกวิธีใช้'
+      ],
+      ans:1,
+      why:'ครูต้องการรู้ขั้นตอนการใช้งานที่สั้นที่สุด ไม่ใช่กลไกภายใน — การซ่อนรายละเอียดที่ไม่จำเป็นแต่ยังใช้งานได้จริง คือหัวใจของการคิดเชิงนามธรรม'
+    }
+  }
+];
+
+/* =====================================================================
+   คลังโจทย์ · ด่าน 4 ห้องคอม — การออกแบบอัลกอริทึม
+   S = จุดเริ่ม, G = เป้าหมาย, # = โต๊ะ/สิ่งกีดขวาง, . = ทางเดิน
+   ===================================================================== */
+const ALGO = [
+  {
+    story:'ครูคอมชี้ไปที่หุ่นยนต์ส่งเอกสารที่จอดนิ่งอยู่ “มันเดินชนโต๊ะทุกรอบ เพราะยังไม่มีใครเขียนลำดับคำสั่งให้มันดี ๆ ลองเขียนให้หน่อย”',
+    mapA:['.....G','.####.','##....','...###','......','S#####'],
+    mapB:['....G','.###.','.....','.###.','S....'],
+    buggy:[['f',2],['left'],['f',4],['left'],['f',2]],
+    bugHint:'ลองเดินตามคำสั่งด้วยนิ้วทีละบล็อกบนตาราง แล้วดูว่าหุ่นเริ่มออกนอกเส้นทางตั้งแต่บล็อกที่เท่าไร'
+  },
+  {
+    story:'หุ่นยนต์ตัวที่สองถูกย้ายไปอยู่โซนที่โต๊ะเยอะกว่าเดิม ครูบอกว่า “ตัวนี้ยากขึ้นนะ ลองดูว่าจะพามันถึงมุมได้ไหม”',
+    mapA:['G.....','.####.','....##','###...','......','#####S'],
+    mapB:['....G','.#.#.','.#.#.','.#.#.','S....'],
+    buggy:[['right'],['f',2],['left'],['f',4],['right'],['f',1]],
+    bugHint:'ตรวจ “จำนวนก้าว” ของแต่ละบล็อกด้วย ไม่ใช่แค่ทิศทาง — บางครั้งบั๊กคือเดินน้อยไปหรือมากไปหนึ่งช่อง'
+  },
+  {
+    story:'ห้องคอมย้ายโต๊ะใหม่ทั้งหมด แผนผังเดิมใช้ไม่ได้แล้ว ครูให้คุณเขียนเส้นทางใหม่ให้หุ่นยนต์ตั้งแต่ต้น',
+    mapA:['.....G','.#.##.','##....','...#.#','......','S#####'],
+    mapB:['....G','...#.','##.#.','...#.','S....'],
+    buggy:[['f',1],['right'],['f',2],['left'],['f',2],['right'],['f',2]],
+    bugHint:'เดินตามคำสั่งทีละบล็อก แล้วจดว่าหุ่นอยู่ช่องไหน — บล็อกแรกที่ทำให้ตำแหน่งผิดจากที่คิดไว้ คือบล็อกที่มีบั๊ก'
+  }
+];
+
+/* =====================================================================
+   คลังคำถามด่านสุดท้าย — หอประชุม "สัปดาห์ส่งงาน"
+   ===================================================================== */
+const BOSS_POOL = [
+  { c:'การแบ่งปัญหา', q:'คุณต้องส่งงาน 5 วิชาในสัปดาห์เดียว ข้อใดคือการใช้ “การแบ่งปัญหา” ได้ถูกต้องที่สุด',
+    o:['นั่งเครียดแล้วบอกตัวเองว่าต้องทำให้เสร็จทั้งหมด','แยกเป็นงานย่อยรายวิชา ประเมินเวลาแต่ละชิ้น แล้วจัดลงตารางแต่ละวัน','ทำวิชาที่ชอบที่สุดวิชาเดียวให้ดีที่สุด','ขอเลื่อนส่งทุกวิชาพร้อมกัน'], a:1 },
+  { c:'การแบ่งปัญหา', q:'ข้อใด <b>ไม่ใช่</b> งานย่อยที่ดีของภารกิจ “ทำรายงานกลุ่มวิชาสังคม”',
+    o:['แบ่งหัวข้อให้สมาชิกแต่ละคน','ค้นหาแหล่งข้อมูลอ้างอิง 5 แหล่ง','ทำให้ได้เกรด 4 ทุกวิชาในเทอมนี้','รวมไฟล์และตรวจรูปแบบก่อนส่ง'], a:2 },
+  { c:'การแบ่งปัญหา', q:'เพื่อนบอกว่า “งานย่อยของฉันคือ ทำโครงงานให้เสร็จ” ปัญหาของงานย่อยนี้คืออะไร',
+    o:['ย่อยเกินไปจนไม่มีความหมาย','กว้างเกินไป ยังเป็นปัญหาเดิมที่ยังไม่ถูกแบ่ง','ละเอียดเกินความจำเป็น','เกี่ยวข้องกับภารกิจน้อยเกินไป'], a:1 },
+  { c:'การแบ่งปัญหา', q:'ในการวางแผนงานย่อย สิ่งใดควรทำ <b>ก่อน</b> เสมอ',
+    o:['ประกาศผลให้ทุกคนทราบ','ลงมือทำงานที่สนุกที่สุดก่อน','สำรวจข้อมูลตั้งต้นที่งานอื่นต้องใช้ต่อ','ซื้ออุปกรณ์ทั้งหมดไว้ก่อน'], a:2 },
+
+  { c:'การหารูปแบบ', q:'คุณสังเกตว่าทุกวันจันทร์รถติดกว่าปกติจนเข้าเรียนสาย การสังเกตนี้คือแนวคิดใด',
+    o:['การหารูปแบบ','การคิดเชิงนามธรรม','การออกแบบอัลกอริทึม','การแบ่งปัญหา'], a:0 },
+  { c:'การหารูปแบบ', q:'ลำดับคะแนนเก็บคือ 2, 5, 8, 11, … ครั้งถัดไปควรเป็นเท่าใด',
+    o:['12','13','14','15'], a:2 },
+  { c:'การหารูปแบบ', q:'ยอดวิวคลิปเป็น 3, 6, 12, 24, … ยอดถัดไปคือเท่าใด',
+    o:['30','36','48','72'], a:2 },
+  { c:'การหารูปแบบ', q:'ประโยชน์สำคัญที่สุดของการหารูปแบบคือข้อใด',
+    o:['ทำให้ข้อมูลดูสวยงามขึ้น','ใช้ทำนายสิ่งที่จะเกิดขึ้นต่อไป และนำวิธีเดิมไปใช้ซ้ำได้','ทำให้ปัญหาเล็กลงโดยอัตโนมัติ','ทำให้ไม่ต้องเขียนขั้นตอนการทำงาน'], a:1 },
+  { c:'การหารูปแบบ', q:'ตารางเวรของห้องวนซ้ำทุก 5 วัน ถ้าวันนี้เป็นเวรของกลุ่มที่ 2 อีก 5 วันจะเป็นเวรของกลุ่มใด',
+    o:['กลุ่มที่ 1','กลุ่มที่ 2','กลุ่มที่ 3','กลุ่มที่ 4'], a:1 },
+
+  { c:'การคิดเชิงนามธรรม', q:'แผนที่รถไฟฟ้าตัดรายละเอียดถนนและอาคารออก เหลือแค่เส้นทางกับสถานี นี่คือแนวคิดใด',
+    o:['การแบ่งปัญหา','การหารูปแบบ','การคิดเชิงนามธรรม','การออกแบบอัลกอริทึม'], a:2 },
+  { c:'การคิดเชิงนามธรรม', q:'ระบบยืมหนังสือของห้องสมุด ข้อมูลใด <b>ไม่จำเป็น</b> ต้องเก็บ',
+    o:['รหัสนักเรียน','วันครบกำหนดคืน','เพลงโปรดของผู้ยืม','รายชื่อหนังสือที่ยืม'], a:2 },
+  { c:'การคิดเชิงนามธรรม', q:'การคิดเชิงนามธรรมที่ดีหมายถึงข้อใด',
+    o:['ตัดข้อมูลออกให้มากที่สุดเท่าที่จะทำได้','เก็บข้อมูลทุกอย่างไว้ก่อนเผื่อได้ใช้','เลือกเก็บเฉพาะข้อมูลที่จำเป็นต่อเป้าหมาย และซ่อนรายละเอียดที่ไม่เกี่ยวข้อง','เปลี่ยนข้อมูลทั้งหมดให้เป็นตัวเลข'], a:2 },
+  { c:'การคิดเชิงนามธรรม', q:'อธิบายวิธีใช้แอปให้ผู้ใช้ทั่วไปฟัง ควรเน้นเรื่องใด',
+    o:['โครงสร้างฐานข้อมูลภายใน','ภาษาโปรแกรมที่ใช้เขียน','สิ่งที่ผู้ใช้ต้องกดและผลลัพธ์ที่จะได้','ขนาดไฟล์ของแอป'], a:2 },
+
+  { c:'การออกแบบอัลกอริทึม', q:'คุณสมบัติสำคัญที่สุดของอัลกอริทึมที่ดีคือข้อใด',
+    o:['มีขั้นตอนชัดเจน เรียงลำดับถูกต้อง และสิ้นสุดได้','มีจำนวนขั้นตอนมากที่สุด','ใช้คำศัพท์เทคนิคเยอะ ๆ','ไม่ต้องระบุเงื่อนไขใด ๆ'], a:0 },
+  { c:'การออกแบบอัลกอริทึม', q:'หุ่นยนต์หันหน้าไปทาง “ขึ้น” ถ้าสั่ง “เลี้ยวขวา” 2 ครั้งติดกัน จะหันไปทางใด',
+    o:['ขึ้น','ลง','ซ้าย','ขวา'], a:1 },
+  { c:'การออกแบบอัลกอริทึม', q:'โปรแกรมทำงานได้แต่ผลลัพธ์ไม่ตรงเป้าหมาย ขั้นตอนแรกที่ควรทำคือข้อใด',
+    o:['ลบโปรแกรมทิ้งแล้วเขียนใหม่ทั้งหมดทันที','ไล่ตามคำสั่งทีละขั้นเพื่อหาว่าผิดตั้งแต่ขั้นไหน','เพิ่มคำสั่งเข้าไปอีกจนกว่าจะถูก','เปลี่ยนไปใช้เครื่องอื่น'], a:1 },
+  { c:'การออกแบบอัลกอริทึม', q:'คำสั่ง “เดินหน้า 4 ก้าว” เขียนแทน “เดินหน้า” 4 บล็อกได้ เพราะใช้หลักการใด',
+    o:['การทำซ้ำ','การเรียงลำดับ','การตัดสินใจ','การเปรียบเทียบ'], a:0 },
+  { c:'การออกแบบอัลกอริทึม', q:'ข้อใดคือ “เงื่อนไข” ในอัลกอริทึมการเดินทางมาโรงเรียน',
+    o:['เดินไปป้ายรถเมล์','ถ้าฝนตก ให้พกร่ม','ขึ้นรถเมล์สาย 8','ลงรถหน้าโรงเรียน'], a:1 },
+
+  { c:'รวมทุกแนวคิด', q:'การจัดงานใหญ่ให้สำเร็จ ควรใช้แนวคิดทั้ง 4 ตามลำดับใดจึงเหมาะสมที่สุด',
+    o:['อัลกอริทึม → นามธรรม → รูปแบบ → แบ่งปัญหา','แบ่งปัญหา → หารูปแบบ → นามธรรม → ออกแบบอัลกอริทึม','นามธรรม → อัลกอริทึม → แบ่งปัญหา → รูปแบบ','รูปแบบ → แบ่งปัญหา → อัลกอริทึม → นามธรรม'], a:1 },
+  { c:'รวมทุกแนวคิด', q:'ข้อใดอธิบาย “แนวคิดเชิงคำนวณ” ได้ถูกต้องที่สุด',
+    o:['การใช้คอมพิวเตอร์ให้คล่อง','กระบวนการคิดแก้ปัญหาอย่างเป็นระบบ ที่ใช้ได้แม้ไม่มีคอมพิวเตอร์','การเขียนโปรแกรมภาษาไพทอน','การคิดเลขเร็ว'], a:1 }
+];
+
+/* =====================================================================
+   ระบบคำใบ้ 3 ระดับ (ใช้ร่วมกันทุกด่าน)
+   ===================================================================== */
+let curHints = { list:[], shown:0, zone:null };
+
+function hintsHTML(list, zoneId){
+  curHints = { list, shown:0, zone:zoneId };
+  return `<div class="hints">
+    <div class="hint-btns">${ list.map((_,i)=>
+      `<button id="hb-${i}" onclick="useHint(${i})" ${i>0?'disabled':''}>💡 คำใบ้ที่ ${i+1} <span style="opacity:.65">(−${COSTS.hint[i]} พลัง)</span></button>`
+    ).join('') }</div>
+    <div id="hint-out"></div>
+  </div>`;
+}
+function useHint(i){
+  if(i !== curHints.shown) return;
+  spendFocus(COSTS.hint[i], 'คำใบ้', curHints.zone);
+  G.hintsUsed++;
+  if(curHints.zone && G.zones[curHints.zone]) G.zones[curHints.zone].hints++;
+  curHints.shown = i + 1;
+  const lv = ['นัดใบ้เบา ๆ','วิธีคิด','เกือบเฉลย'][i] || '';
+  document.getElementById('hint-out').insertAdjacentHTML('beforeend',
+    `<div class="hint-box"><b>คำใบ้ที่ ${i+1} (${lv}):</b> ${curHints.list[i]}</div>`);
+  const a = document.getElementById('hb-'+i); if(a) a.disabled = true;
+  const b = document.getElementById('hb-'+(i+1)); if(b) b.disabled = false;
+  SFX.click();
+}
+
+function wrongAnswer(zoneId, extra){
+  spendFocus(extra || COSTS.wrong, 'ตอบผิด', zoneId);
+  G.wrongs++;
+  if(zoneId && G.zones[zoneId]) G.zones[zoneId].wrongs++;
+  SFX.bad();
+}
+
+/* =====================================================================
+   เข้าโซน / จบโซน
+   ===================================================================== */
+function enterZone(id){
+  if(!G) return;
+  if(document.getElementById('overlay').classList.contains('open')) return;
+  if(id === 'boss' && !allSolved()){
+    toast('🔒 หอประชุมยังปิดอยู่ — ต้องแก้ปัญหาให้ครบทั้ง 4 อาคารก่อน'); SFX.bad(); return;
+  }
+  if(G.zones[id].done){
+    const z = ZONES.find(v=> v.id === id);
+    openModal(`<div class="m-eyebrow">${esc(z.name)}</div>
+      <h2 class="m-title">${z.icon} จุดนี้เรียบร้อยแล้ว</h2>
+      <div class="fb ok">✅ คุณแก้ปัญหาเรื่อง “${esc(z.concept)}” ที่นี่เรียบร้อยแล้ว</div>
+      <div class="m-actions"><button class="btn ghost" onclick="closeModal()">กลับไปเดินต่อ</button></div>`);
+    return;
+  }
+  SFX.click();
+  if(id === 'decomp')   return startDecomp();
+  if(id === 'pattern')  return startPattern();
+  if(id === 'abstract') return startAbstract();
+  if(id === 'algo')     return startAlgo();
+  if(id === 'boss')     return startBoss();
+}
+
+function finishZone(id){
+  const z = ZONES.find(v=> v.id === id);
+  G.zones[id].done = true;
+  const el = document.getElementById('z-'+id); if(el) el.classList.add('done');
+  if(z.item){ G.bag[z.item] = 'have'; SFX.item(); }
+  renderBag();
+  if(allSolved()){
+    const b = document.getElementById('z-boss');
+    if(b){ b.classList.remove('locked'); b.classList.add('ready'); }
+  }
+  SFX.win();
+  const it = z.item ? ITEMS[z.item] : null;
+  openModal(`
+    <div class="m-eyebrow">แก้ปัญหาสำเร็จ</div>
+    <h2 class="m-title">${z.icon} ${esc(z.name)} เรียบร้อย!</h2>
+    <div class="fb ok">🎉 คุณใช้ <b>${esc(z.concept)}</b> แก้ปัญหาที่นี่ได้สำเร็จ</div>
+    ${ it ? `<div class="task">🎒 ได้รับไอเทม <b>${it.icon} ${esc(it.name)}</b><br>
+        <span style="font-weight:400; font-size:13.5px;">${esc(it.desc)} — ใช้ได้ในด่านสุดท้ายที่หอประชุม</span></div>` : '' }
+    <div class="fb info">⚡ พลังสมาธิคงเหลือ <b>${G.focus}</b> / 100
+      ${ allSolved() ? '<br>🏛️ <b>หอประชุมเปิดแล้ว!</b> เดินไปตรงกลางแผนที่เพื่อเจอด่านสุดท้าย' : '' }</div>
+    <div class="m-actions"><button class="btn" onclick="closeModal()">กลับไปเดินต่อ →</button></div>
+  `);
+}
+
+/* =====================================================================
+   ด่าน 1 · โรงยิม — การแบ่งปัญหา
+   ===================================================================== */
+let DC = null;
+
+function startDecomp(){
+  const d = DECOMP[G.variant.decomp];
+  DC = { data:d, sel:new Set(), order:[], pool:shuffle(d.order.map((t,i)=>({t, i}))) };
+  renderDecompA();
+}
+
+function renderDecompA(){
+  const d = DC.data;
+  openModal(`
+    <div class="m-eyebrow">โรงยิม · ขั้นที่ 1 จาก 2</div>
+    <h2 class="m-title">🧩 การแบ่งปัญหา (Decomposition)</h2>
+    <div class="story">${d.story}</div>
+    <div class="task">🎯 ภารกิจใหญ่: ${esc(d.mission)}<br>
+      <span style="font-weight:400; font-size:13.5px;">เลือก <b>งานย่อยที่ดี 4 ข้อ</b> — ต้องทำเสร็จได้จริง ไม่กว้างจนเป็นปัญหาเดิม ไม่ย่อยจนไร้ความหมาย และต้องเกี่ยวกับภารกิจ</span></div>
+    ${ hintsHTML([
+      'ลองตัดข้อที่อ่านแล้ว “ยังไม่รู้ว่าต้องลงมือทำอะไร” ออกก่อน',
+      'งานย่อยที่ดีต้องตอบได้ว่า <b>ทำเสร็จเมื่อไหร่</b> — ถ้าตอบไม่ได้ว่าจุดจบอยู่ตรงไหน แปลว่ายังไม่ใช่งานย่อย',
+      'ข้อที่ผิดมี 4 แบบคือ: กว้างเกินไป, ย่อยเกินไป, ไม่เกี่ยวกับภารกิจ และวัดผลไม่ได้ — ลองจับคู่ทีละข้อดู'
+    ], 'decomp') }
+    <div class="picks" id="dc-list">${ d.picks.map((p,i)=>
+      `<div class="pick" id="dc-${i}" onclick="toggleDecomp(${i})">
+         <div class="box">✔</div><div><span>${esc(p.t)}</span><span class="why" id="dcw-${i}" style="display:none"></span></div>
+       </div>`).join('') }</div>
+    <div id="dc-fb"></div>
+    <div class="m-actions">
+      <button class="btn" onclick="checkDecompA()">✅ ตรวจคำตอบ</button>
+      <span style="align-self:center; font-size:12.5px; color:#6b7280;" id="dc-count">เลือกแล้ว 0 / 4</span>
+    </div>
+  `);
+}
+
+function toggleDecomp(i){
+  const el = document.getElementById('dc-'+i);
+  if(DC.sel.has(i)){ DC.sel.delete(i); el.classList.remove('on'); }
+  else { DC.sel.add(i); el.classList.add('on'); }
+  el.classList.remove('right','wrong');
+  document.getElementById('dc-count').textContent = 'เลือกแล้ว ' + DC.sel.size + ' / 4';
+  SFX.click();
+}
+
+function checkDecompA(){
+  const d = DC.data;
+  let ok = true, missed = 0, extra = 0;
+  d.picks.forEach((p,i)=>{
+    const el = document.getElementById('dc-'+i), sel = DC.sel.has(i);
+    el.classList.remove('right','wrong');
+    if(p.ok && sel) el.classList.add('right');
+    else if(!p.ok && sel){ el.classList.add('wrong'); ok = false; extra++; }
+    else if(p.ok && !sel){ ok = false; missed++; }
+    if(sel){
+      const w = document.getElementById('dcw-'+i);
+      w.style.display = 'block'; w.textContent = (p.ok ? '✔ ' : '✘ ') + p.why;
+    }
+  });
+  const fb = document.getElementById('dc-fb');
+  if(ok){
+    SFX.good();
+    fb.innerHTML = `<div class="fb ok">🎉 ถูกต้องทั้งหมด! คุณแยกงานย่อยที่ “ทำได้จริง” ออกจากงานที่กว้างเกิน ย่อยเกิน และไม่เกี่ยวข้องได้แล้ว</div>`;
+    document.querySelectorAll('#dc-list .pick').forEach(p=> p.onclick = null);
+    setTimeout(renderDecompB, 900);
+  } else {
+    wrongAnswer('decomp');
+    fb.innerHTML = `<div class="fb no">ยังไม่ครบ — ${ extra ? 'มีข้อที่เลือกเกินมา '+extra+' ข้อ ' : '' }${ missed ? 'และยังขาดอีก '+missed+' ข้อ' : '' }<br>
+      <span style="font-weight:400">อ่านคำอธิบายใต้ข้อที่เลือกไว้ แล้วลองปรับใหม่ (−${COSTS.wrong} พลัง)</span></div>`;
+  }
+}
+
+function renderDecompB(){
+  const d = DC.data;
+  DC.order = [];
+  openModal(`
+    <div class="m-eyebrow">โรงยิม · ขั้นที่ 2 จาก 2</div>
+    <h2 class="m-title">🧩 เรียงลำดับงานย่อย</h2>
+    <div class="story">แบ่งงานได้แล้ว แต่เพื่อนในทีมถามว่า “แล้วจะเริ่มจากอะไรก่อน?” —
+      งานย่อยที่ดีต้องเรียงให้ <b>งานที่ให้ข้อมูลตั้งต้น</b> มาก่อนงานที่ต้องใช้ข้อมูลนั้น</div>
+    <div class="task">🎯 แตะการ์ดทางซ้ายเพื่อเรียงลำดับการทำงานให้ถูกต้อง (แตะการ์ดทางขวาเพื่อเอาออก)</div>
+    ${ hintsHTML([
+      'เริ่มจากงานที่ทำได้ทันทีโดยยังไม่ต้องรู้อะไรเพิ่ม',
+      'ถามว่า “งานนี้ต้องรู้อะไรก่อนถึงจะทำได้” — สิ่งที่ต้องรู้ก่อน ต้องเป็นงานที่มาก่อน',
+      'งานที่เป็นการ <b>ประกาศ / แจ้งให้ทุกคนทราบ</b> มักอยู่ท้ายสุดเสมอ เพราะต้องรู้ผลทั้งหมดก่อน'
+    ], 'decomp') }
+    <div class="order-wrap">
+      <div class="order-col"><h4>📋 งานย่อยที่ยังไม่ได้จัดลำดับ</h4><div class="order-pool" id="dc-pool"></div></div>
+      <div class="order-col"><h4>✅ ลำดับการทำงาน</h4><div class="order-slots" id="dc-slots"></div></div>
+    </div>
+    <div id="dc-fb2"></div>
+    <div class="m-actions"><button class="btn" id="dc-check" onclick="checkDecompB()" disabled>✅ ตรวจลำดับ</button></div>
+  `);
+  drawOrder();
+}
+
+function drawOrder(){
+  const pool = document.getElementById('dc-pool'), slots = document.getElementById('dc-slots');
+  const used = new Set(DC.order);
+  const left = DC.pool.filter(p=> !used.has(p.i));
+  pool.innerHTML = left.length ? left.map(p=>
+    `<div class="ord" onclick="pickOrder(${p.i})"><span>${esc(p.t)}</span></div>`).join('')
+    : '<div class="empty-note">จัดครบแล้ว 🎉</div>';
+  slots.innerHTML = DC.order.length ? DC.order.map((idx,pos)=>{
+    const t = DC.data.order[idx];
+    return `<div class="ord" id="os-${pos}" onclick="unpickOrder(${pos})"><span class="n">${pos+1}</span><span>${esc(t)}</span></div>`;
+  }).join('') : '<div class="empty-note">แตะการ์ดทางซ้ายเพื่อเริ่มเรียง</div>';
+  document.getElementById('dc-check').disabled = DC.order.length !== DC.data.order.length;
+}
+function pickOrder(i){ DC.order.push(i); SFX.click(); drawOrder(); }
+function unpickOrder(pos){ DC.order.splice(pos,1); SFX.click(); drawOrder(); }
+
+function checkDecompB(){
+  const correct = DC.order.every((v,i)=> v === i);
+  const fb = document.getElementById('dc-fb2');
+  DC.order.forEach((v,pos)=>{
+    const el = document.getElementById('os-'+pos);
+    if(el) el.classList.add(v === pos ? 'right' : 'wrong');
+  });
+  if(correct){
+    SFX.good();
+    fb.innerHTML = `<div class="fb ok">🎉 ลำดับถูกต้อง!<br><span style="font-weight:400">${esc(DC.data.orderWhy)}</span></div>`;
+    setTimeout(()=> finishZone('decomp'), 1400);
+  } else {
+    wrongAnswer('decomp');
+    fb.innerHTML = `<div class="fb no">ลำดับยังไม่ถูก — การ์ดที่ขึ้นสีแดงคือตำแหน่งที่ผิด ลองสลับดูใหม่ (−${COSTS.wrong} พลัง)</div>`;
+    setTimeout(()=> document.querySelectorAll('#dc-slots .ord').forEach(e=> e.classList.remove('right','wrong')), 1600);
+  }
+}
+
+/* =====================================================================
+   ด่าน 2 · ห้องสมุด — การหารูปแบบ
+   ===================================================================== */
+let PT = null;
+
+function startPattern(){
+  PT = { data: PATTERN[G.variant.pattern], round: 0, phase: 'rule' };
+  renderPatternRound();
+}
+
+function renderPatternRound(){
+  const d = PT.data, r = d.rounds[PT.round];
+  openModal(`
+    <div class="m-eyebrow">ห้องสมุด · ขั้นที่ 1 จาก 2 · ลำดับที่ ${PT.round+1} จาก ${d.rounds.length}</div>
+    <h2 class="m-title">🔍 การหารูปแบบ (Pattern Recognition)</h2>
+    ${ PT.round === 0 ? `<div class="story">${d.story}</div>` : '' }
+    <div class="task">🎯 ${esc(r.q)} — ช่องที่หายไปควรเป็นอะไร</div>
+    ${ hintsHTML([
+      'ลองดูว่าค่าที่อยู่ <b>ติดกัน</b> ต่างกันเท่าไร แล้วผลต่างนั้นซ้ำเดิมหรือไม่',
+      'ถ้าผลต่างไม่คงที่ ลองดูว่าค่าถัดไปเกิดจากการ <b>คูณ</b> หรือ <b>บวกสองค่าก่อนหน้า</b> หรือเปล่า',
+      'จดผลต่างของทุกคู่ลงบนกระดาษเป็นแถวเดียว แล้วอ่านดู — แบบแผนมักโผล่ออกมาทันที'
+    ], 'pattern') }
+    <div class="seq">${ r.seq.map(s=> s === '?'
+      ? '<div class="cell q">?</div>' : `<div class="cell">${esc(s)}</div>`).join('') }</div>
+    <div class="opts" id="pt-opts">${ r.opts.map((o,i)=>
+      `<button id="pto-${i}" onclick="answerPattern(${i})">${esc(o)}</button>`).join('') }</div>
+    <div id="pt-fb"></div>
+  `);
+}
+
+function answerPattern(i){
+  const r = PT.data.rounds[PT.round];
+  const chosen = r.opts[i], fb = document.getElementById('pt-fb');
+  if(chosen === r.ans){
+    SFX.good();
+    document.getElementById('pto-'+i).classList.add('right');
+    document.querySelectorAll('#pt-opts button').forEach(b=> b.disabled = true);
+    fb.innerHTML = `<div class="fb ok">✅ ถูกต้อง! ${esc(r.why)}</div>`;
+    setTimeout(()=>{
+      PT.round++;
+      if(PT.round < PT.data.rounds.length) renderPatternRound();
+      else renderPatternTable();
+    }, 1300);
+  } else {
+    wrongAnswer('pattern');
+    document.getElementById('pto-'+i).classList.add('wrong');
+    document.getElementById('pto-'+i).disabled = true;
+    fb.innerHTML = `<div class="fb no">ยังไม่ใช่ — ลองดูความสัมพันธ์ระหว่างค่าที่ติดกันอีกครั้ง (−${COSTS.wrong} พลัง)</div>`;
+  }
+}
+
+function renderPatternTable(){
+  const t = PT.data.table;
+  PT.phase = 'rule';
+  openModal(`
+    <div class="m-eyebrow">ห้องสมุด · ขั้นที่ 2 จาก 2</div>
+    <h2 class="m-title">🔍 อ่านตารางข้อมูลจริง</h2>
+    <div class="story">ลำดับตัวเลขง่าย ๆ คุณทำได้แล้ว — แต่ข้อมูลจริงในโรงเรียนไม่ได้เรียงสวยแบบนั้น
+      ลองหาแบบแผนจากตารางข้อมูลจริงดู</div>
+    <div class="task">📊 ${esc(t.title)}</div>
+    <div class="table-scroll"><table class="tbl">
+      <tr>${ t.head.map(h=> `<th>${esc(h)}</th>`).join('') }</tr>
+      ${ t.rows.map(r=> `<tr>${ r.map(c=> `<td>${esc(c)}</td>`).join('') }</tr>`).join('') }
+    </table></div>
+    ${ hintsHTML([
+      'อย่าดูตัวเลขทีละตัว — ลองเปรียบเทียบทั้ง <b>แถว</b> หรือทั้ง <b>คอลัมน์</b> ว่าอันไหนโดดออกมา',
+      'มองหาสิ่งที่ <b>เกิดซ้ำในทุกแถว</b> ถ้าเกิดครั้งเดียวยังไม่นับว่าเป็นแบบแผน',
+      'ตัดตัวเลือกที่เป็นจริงแค่บางแถวออกก่อน เหลือเฉพาะข้อที่เป็นจริงกับข้อมูล <b>ทุกแถว</b>'
+    ], 'pattern') }
+    <div class="task" style="background:#eef4fb; border-color:#c2d6ea; color:#284a68;">❓ ${esc(t.q)}</div>
+    <div class="choices" id="pt-ch">${ t.opts.map((o,i)=>
+      `<button id="ptc-${i}" onclick="answerPatternRule(${i})">${esc(o)}</button>`).join('') }</div>
+    <div id="pt-fb2"></div>
+  `);
+}
+
+function answerPatternRule(i){
+  const t = PT.data.table, fb = document.getElementById('pt-fb2');
+  if(i === t.ans){
+    SFX.good();
+    document.getElementById('ptc-'+i).classList.add('right');
+    document.querySelectorAll('#pt-ch button').forEach(b=> b.disabled = true);
+    fb.innerHTML = `<div class="fb ok">✅ ใช่แล้ว! ${esc(t.why)}</div>
+      <div class="task" style="margin-top:12px;">🔮 ${esc(t.predictQ)}</div>
+      <div class="choices" id="pt-pr">${ t.predictOpts.map((o,k)=>
+        `<button id="ptp-${k}" onclick="answerPatternPredict(${k})">${esc(o)}</button>`).join('') }</div>
+      <div id="pt-fb3"></div>`;
+  } else {
+    wrongAnswer('pattern');
+    document.getElementById('ptc-'+i).classList.add('wrong');
+    document.getElementById('ptc-'+i).disabled = true;
+    fb.innerHTML = `<div class="fb no">ข้อนี้ยังไม่ใช่ — ลองตรวจว่ามันเป็นจริงกับ <b>ทุกแถว</b> ในตารางหรือเปล่า (−${COSTS.wrong} พลัง)</div>`;
+  }
+}
+
+function answerPatternPredict(k){
+  const t = PT.data.table, fb = document.getElementById('pt-fb3');
+  if(k === t.predictAns){
+    SFX.good();
+    document.getElementById('ptp-'+k).classList.add('right');
+    document.querySelectorAll('#pt-pr button').forEach(b=> b.disabled = true);
+    fb.innerHTML = `<div class="fb ok">🎉 เยี่ยม! เมื่อรู้แบบแผนแล้ว เราจึง <b>ทำนายสิ่งที่ยังไม่เกิด</b> ได้ — นี่คือประโยชน์ที่แท้จริงของการหารูปแบบ</div>`;
+    setTimeout(()=> finishZone('pattern'), 1500);
+  } else {
+    wrongAnswer('pattern');
+    document.getElementById('ptp-'+k).classList.add('wrong');
+    document.getElementById('ptp-'+k).disabled = true;
+    fb.innerHTML = `<div class="fb no">ลองใช้แบบแผนที่เพิ่งหาเจอมาทำนายอีกครั้ง (−${COSTS.wrong} พลัง)</div>`;
+  }
+}
+
+/* =====================================================================
+   ด่าน 3 · โรงอาหาร — การคิดเชิงนามธรรม
+   ===================================================================== */
+let AB = null;
+
+function startAbstract(){
+  AB = { data: ABSTRACT[G.variant.abstract], sel:new Set() };
+  renderAbstractA();
+}
+
+function renderAbstractA(){
+  const d = AB.data;
+  openModal(`
+    <div class="m-eyebrow">โรงอาหาร · ขั้นที่ 1 จาก 2</div>
+    <h2 class="m-title">🗂️ การคิดเชิงนามธรรม (Abstraction)</h2>
+    <div class="story">${d.story}</div>
+    <div class="task">🎯 ${esc(d.mission)}<br>
+      <span style="font-weight:400; font-size:13.5px;">เลือกเฉพาะข้อมูลที่ <b>จำเป็นจริง ๆ</b> ต่อระบบนี้ (มี ${d.need} ข้อ) — เก็บข้อมูลที่ไม่ได้ใช้ = เปลืองและเสี่ยงโดยเปล่าประโยชน์</span></div>
+    ${ hintsHTML([
+      'ถามตัวเองทีละข้อว่า “ถ้าไม่มีข้อมูลนี้ ระบบยังทำงานได้ไหม”',
+      'ถ้าตอบว่า “ยังทำงานได้” แปลว่า <b>ไม่จำเป็น</b> ให้ตัดทิ้ง — การคิดเชิงนามธรรมคือการกล้าตัดสิ่งที่ไม่เกี่ยวออก',
+      'ข้อมูลที่จำเป็นมักตอบคำถามเหล่านี้: <b>ใคร · อะไร · เท่าไร · เมื่อไร</b> และเรื่อง <b>ความปลอดภัย</b>'
+    ], 'abstract') }
+    <div class="picks" id="ab-list">${ d.items.map((p,i)=>
+      `<div class="pick" id="ab-${i}" onclick="toggleAbs(${i})">
+         <div class="box">✔</div><div><span>${esc(p.t)}</span><span class="why" id="abw-${i}" style="display:none"></span></div>
+       </div>`).join('') }</div>
+    <div id="ab-fb"></div>
+    <div class="m-actions">
+      <button class="btn" onclick="checkAbstractA()">✅ ตรวจคำตอบ</button>
+      <span style="align-self:center; font-size:12.5px; color:#6b7280;" id="ab-count">เลือกแล้ว 0 / ${d.need}</span>
+    </div>
+  `);
+}
+
+function toggleAbs(i){
+  const el = document.getElementById('ab-'+i);
+  if(AB.sel.has(i)){ AB.sel.delete(i); el.classList.remove('on'); }
+  else { AB.sel.add(i); el.classList.add('on'); }
+  el.classList.remove('right','wrong');
+  document.getElementById('ab-count').textContent = 'เลือกแล้ว ' + AB.sel.size + ' / ' + AB.data.need;
+  SFX.click();
+}
+
+function checkAbstractA(){
+  const d = AB.data;
+  let ok = true, extra = 0, missed = 0;
+  d.items.forEach((p,i)=>{
+    const el = document.getElementById('ab-'+i), sel = AB.sel.has(i);
+    el.classList.remove('right','wrong');
+    if(p.ok && sel) el.classList.add('right');
+    else if(!p.ok && sel){ el.classList.add('wrong'); ok = false; extra++; }
+    else if(p.ok && !sel){ ok = false; missed++; }
+    if(sel){
+      const w = document.getElementById('abw-'+i);
+      w.style.display = 'block'; w.textContent = (p.ok ? '✔ ' : '✘ ') + p.why;
+    }
+  });
+  const fb = document.getElementById('ab-fb');
+  if(ok){
+    SFX.good();
+    fb.innerHTML = `<div class="fb ok">🎉 ถูกต้อง! คุณเก็บเฉพาะข้อมูลที่ระบบต้องใช้จริง และตัดรายละเอียดที่ไม่เกี่ยวข้องออกได้หมด</div>`;
+    document.querySelectorAll('#ab-list .pick').forEach(p=> p.onclick = null);
+    setTimeout(renderAbstractB, 1000);
+  } else {
+    wrongAnswer('abstract');
+    fb.innerHTML = `<div class="fb no">ยังไม่ถูกทั้งหมด — ${ extra ? 'เลือกข้อมูลที่ไม่จำเป็นมา '+extra+' ข้อ ' : '' }${ missed ? 'และยังขาดข้อมูลสำคัญอีก '+missed+' ข้อ' : '' }<br>
+      <span style="font-weight:400">อ่านคำอธิบายใต้ข้อที่เลือก แล้วลองใหม่ (−${COSTS.wrong} พลัง)</span></div>`;
+  }
+}
+
+function renderAbstractB(){
+  const L = AB.data.level;
+  openModal(`
+    <div class="m-eyebrow">โรงอาหาร · ขั้นที่ 2 จาก 2</div>
+    <h2 class="m-title">🗂️ เลือกระดับรายละเอียดให้พอดี</h2>
+    <div class="story">การคิดเชิงนามธรรมไม่ได้แปลว่า “ตัดออกให้เยอะที่สุด” แต่คือ
+      <b>ตัดให้พอดีกับคนที่จะใช้งาน</b> — ละเอียดเกินไปก็ใช้ไม่ได้ ตัดมากเกินไปก็ใช้ไม่ได้เหมือนกัน</div>
+    <div class="task">❓ ${L.q}</div>
+    ${ hintsHTML([
+      'นึกถึงคนฟังว่าเขา “ต้องทำอะไรต่อ” หลังฟังคำอธิบายจบ',
+      'ตัดข้อที่พูดถึง <b>กลไกภายใน</b> ที่ผู้ใช้ไม่ได้แตะต้องเลยออกไปก่อน',
+      'เหลือ 2 ข้อแล้วให้ถามว่า “ฟังจบแล้วเขาลงมือทำได้ทันทีไหม” — ข้อที่ตอบว่าได้ คือคำตอบ'
+    ], 'abstract') }
+    <div class="choices" id="ab-ch">${ L.opts.map((o,i)=>
+      `<button id="abc-${i}" onclick="answerAbstractB(${i})">${esc(o)}</button>`).join('') }</div>
+    <div id="ab-fb2"></div>
+  `);
+}
+
+function answerAbstractB(i){
+  const L = AB.data.level, fb = document.getElementById('ab-fb2');
+  if(i === L.ans){
+    SFX.good();
+    document.getElementById('abc-'+i).classList.add('right');
+    document.querySelectorAll('#ab-ch button').forEach(b=> b.disabled = true);
+    fb.innerHTML = `<div class="fb ok">🎉 ถูกต้อง! ${esc(L.why)}</div>`;
+    setTimeout(()=> finishZone('abstract'), 1800);
+  } else {
+    wrongAnswer('abstract');
+    document.getElementById('abc-'+i).classList.add('wrong');
+    document.getElementById('abc-'+i).disabled = true;
+    fb.innerHTML = `<div class="fb no">ยังไม่ใช่ — ลองคิดจากมุมของ “คนที่ต้องเอาไปใช้จริง” อีกครั้ง (−${COSTS.wrong} พลัง)</div>`;
+  }
+}
+
+/* =====================================================================
+   ด่าน 4 · ห้องคอม — การออกแบบอัลกอริทึม
+   ===================================================================== */
+let AG = null;
+const FACES = ['up','right','down','left'];
+const FDEG  = { up:0, right:90, down:180, left:270 };
+const BLK_LABEL = { f:'⬆️ เดินหน้า', left:'↩️ เลี้ยวซ้าย', right:'↪️ เลี้ยวขวา' };
+
+function parseMap(rows){
+  const g = rows.map(r=> r.split(''));
+  let s = null, go = null;
+  g.forEach((row,r)=> row.forEach((ch,c)=>{
+    if(ch === 'S') s = { r, c };
+    if(ch === 'G') go = { r, c };
+  }));
+  return { g, rows:g.length, cols:g[0].length, start:s, goal:go };
+}
+
+function startAlgo(){
+  const d = ALGO[G.variant.algo];
+  AG = { data:d, stage:1, prog:[], running:false, map:parseMap(d.mapA) };
+  renderAlgo();
+}
+
+function gridHTML(m){
+  const cells = [];
+  for(let r=0; r<m.rows; r++){
+    for(let c=0; c<m.cols; c++){
+      const ch = m.g[r][c];
+      const cls = ch === '#' ? ' wall' : ch === 'G' ? ' goal' : ch === 'S' ? ' start' : '';
+      const txt = ch === 'G' ? '📄' : ch === '#' ? '' : '';
+      cells.push(`<div class="cell-t${cls}">${txt}</div>`);
+    }
+  }
+  return `<div class="grid-box"><div class="cells" id="cells"
+      style="position:relative; grid-template-columns:repeat(${m.cols},1fr); grid-template-rows:repeat(${m.rows},1fr);">
+      ${cells.join('')}
+      <div id="robot"><div class="ar">⬆️</div>🤖</div>
+    </div></div>`;
+}
+
+function placeRobot(r, c, facing){
+  const m = AG.map, el = document.getElementById('robot'); if(!el) return;
+  el.style.left = ((c + .5) / m.cols * 100) + '%';
+  el.style.top  = ((r + .5) / m.rows * 100) + '%';
+  el.querySelector('.ar').style.transform = 'rotate(' + FDEG[facing] + 'deg)';
+}
+
+function renderAlgo(){
+  const d = AG.data, m = AG.map, isFix = AG.stage === 2;
+  openModal(`
+    <div class="m-eyebrow">ห้องคอมพิวเตอร์ · ขั้นที่ ${AG.stage} จาก 2</div>
+    <h2 class="m-title">🤖 ${ isFix ? 'หาบั๊กในโปรแกรม (Debugging)' : 'การออกแบบอัลกอริทึม' }</h2>
+    <div class="story">${ isFix
+      ? 'รุ่นพี่ทิ้งโปรแกรมไว้ให้ 1 ชุด บอกว่า “มันเกือบถูกแล้ว มีผิดอยู่บล็อกเดียว” — <b>แตะที่บล็อกเพื่อแก้ไข</b> แล้วกดรัน'
+      : d.story }</div>
+    <div class="task">🎯 พาหุ่นยนต์ 🤖 จากช่องเริ่มต้นไปถึงเอกสาร 📄 โดยไม่ชนโต๊ะ (ช่องสีเทา)
+      ${ isFix ? '<br><span style="font-weight:400; font-size:13.5px;">แตะบล็อกเพื่อเปลี่ยนคำสั่ง (วนไปเรื่อย ๆ: เดินหน้า 1–4 ก้าว → เลี้ยวซ้าย → เลี้ยวขวา)</span>' : '' }</div>
+    ${ hintsHTML( isFix ? [
+      d.bugHint,
+      'ใช้นิ้วไล่ตามคำสั่งทีละบล็อกบนตาราง แล้วจดว่าหุ่นอยู่ช่องไหนหลังจบแต่ละบล็อก',
+      'กด “รันคำสั่ง” เพื่อดูว่าหุ่นเริ่มเดินผิดทางตั้งแต่บล็อกที่เท่าไร แล้วแก้เฉพาะบล็อกนั้น'
+    ] : [
+      'มองหาเส้นทางบนตารางด้วยตาก่อน แล้วค่อยแปลงเป็นคำสั่ง',
+      'จำไว้ว่าหุ่นเริ่มต้นหันหน้า <b>ขึ้น</b> เสมอ และ “เลี้ยว” ไม่ทำให้หุ่นขยับช่อง',
+      'เขียนเส้นทางเป็นคำพูดก่อน เช่น “ขึ้น 2 → ขวา 3 → ขึ้น 1” แล้วค่อยแปลงเป็นบล็อกทีละท่อน'
+    ], 'algo') }
+    <div class="robo">
+      ${ gridHTML(m) }
+      <div>
+        ${ isFix ? '' : `<div class="palette">
+          <button onclick="addF(1)">⬆️ เดินหน้า 1</button>
+          <button onclick="addF(2)">⬆️ เดินหน้า 2</button>
+          <button onclick="addF(3)">⬆️ เดินหน้า 3</button>
+          <button onclick="addF(4)">⬆️ เดินหน้า 4</button>
+          <button onclick="addT('left')">↩️ เลี้ยวซ้าย</button>
+          <button onclick="addT('right')">↪️ เลี้ยวขวา</button>
+        </div>` }
+        <div class="steps-left" id="ag-count"></div>
+        <div class="prog" id="ag-prog"></div>
+        <div class="m-actions">
+          ${ isFix ? '' : '<button class="btn ghost sm" onclick="undoBlk()">⬅ ลบบล็อกท้าย</button><button class="btn ghost sm" onclick="clearBlk()">🗑️ ล้าง</button>' }
+          <button class="btn lime sm" onclick="runProg()">▶️ รันคำสั่ง</button>
+        </div>
+        <div id="ag-fb"></div>
+      </div>
+    </div>
+  `, true);
+  drawProg();
+  placeRobot(m.start.r, m.start.c, 'up');
+}
+
+function drawProg(){
+  const el = document.getElementById('ag-prog'); if(!el) return;
+  const isFix = AG.stage === 2;
+  el.innerHTML = AG.prog.length ? AG.prog.map((b,i)=>{
+    const label = b[0] === 'f' ? BLK_LABEL.f + ' ' + b[1] + ' ก้าว' : BLK_LABEL[b[0]];
+    return `<span class="blk ${isFix?'edit':''}" id="blk-${i}" ${isFix?`onclick="editBlk(${i})"`:''}>
+      <span class="i">${i+1}</span>${label}</span>`;
+  }).join('') : '<span style="color:#98a2b3; font-size:13px;">ยังไม่มีคำสั่ง — กดปุ่มด้านบนเพื่อเพิ่มบล็อก</span>';
+  const c = document.getElementById('ag-count');
+  if(c) c.textContent = isFix ? 'โปรแกรมจากรุ่นพี่ (มีผิดอยู่ 1 บล็อก)' : 'ใช้ได้ไม่เกิน 12 บล็อก · ตอนนี้ใช้ไป ' + AG.prog.length;
+}
+
+function addF(n){ if(AG.running || AG.prog.length >= 12) return; AG.prog.push(['f', n]); SFX.click(); drawProg(); }
+function addT(d){ if(AG.running || AG.prog.length >= 12) return; AG.prog.push([d]); SFX.click(); drawProg(); }
+function undoBlk(){ if(AG.running) return; AG.prog.pop(); SFX.click(); drawProg(); }
+function clearBlk(){ if(AG.running) return; AG.prog = []; SFX.click(); drawProg(); }
+
+function editBlk(i){
+  if(AG.running) return;
+  const b = AG.prog[i];
+  if(b[0] === 'f'){ if(b[1] < 4) AG.prog[i] = ['f', b[1]+1]; else AG.prog[i] = ['left']; }
+  else if(b[0] === 'left') AG.prog[i] = ['right'];
+  else AG.prog[i] = ['f', 1];
+  SFX.click(); drawProg();
+}
+
+function sleep(ms){ return new Promise(r=> setTimeout(r, ms)); }
+
+async function runProg(){
+  if(AG.running || AG.prog.length === 0){
+    if(!AG.prog.length) toast('ยังไม่มีคำสั่งให้รัน');
+    return;
+  }
+  AG.running = true;
+  const m = AG.map, fb = document.getElementById('ag-fb');
+  fb.innerHTML = '';
+  let r = m.start.r, c = m.start.c, f = 'up';
+  placeRobot(r, c, f);
+  await sleep(280);
+
+  for(let i=0; i<AG.prog.length; i++){
+    const b = AG.prog[i];
+    document.querySelectorAll('.blk').forEach(e=> e.classList.remove('cur'));
+    const chip = document.getElementById('blk-'+i); if(chip) chip.classList.add('cur');
+    if(b[0] === 'left')  f = FACES[(FACES.indexOf(f) + 3) % 4];
+    else if(b[0] === 'right') f = FACES[(FACES.indexOf(f) + 1) % 4];
+    else {
+      for(let k=0; k<b[1]; k++){
+        let nr = r, nc = c;
+        if(f === 'up') nr--; else if(f === 'down') nr++;
+        else if(f === 'left') nc--; else nc++;
+        if(nr < 0 || nc < 0 || nr >= m.rows || nc >= m.cols || m.g[nr][nc] === '#'){
+          SFX.bad();
+          fb.innerHTML = `<div class="fb no">💥 หุ่นชนสิ่งกีดขวางที่ <b>บล็อกที่ ${i+1}</b> (ก้าวที่ ${k+1})<br>
+            <span style="font-weight:400">ไล่ตามคำสั่งด้วยนิ้วบนตารางถึงบล็อกนั้นแล้วแก้ใหม่ (−${COSTS.wrong} พลัง)</span></div>`;
+          wrongAnswer('algo');
+          AG.running = false;
+          return;
+        }
+        r = nr; c = nc;
+        placeRobot(r, c, f);
+        await sleep(230);
+      }
+    }
+    placeRobot(r, c, f);
+    await sleep(230);
+  }
+  document.querySelectorAll('.blk').forEach(e=> e.classList.remove('cur'));
+  AG.running = false;
+
+  if(r === m.goal.r && c === m.goal.c){
+    SFX.good();
+    if(AG.stage === 1){
+      fb.innerHTML = `<div class="fb ok">🎉 หุ่นยนต์ส่งเอกสารถึงที่หมายแล้ว! ลำดับคำสั่งของคุณถูกต้อง</div>`;
+      setTimeout(()=>{
+        AG.stage = 2;
+        AG.map = parseMap(AG.data.mapB);
+        AG.prog = AG.data.buggy.map(b=> b.slice());
+        renderAlgo();
+      }, 1500);
+    } else {
+      fb.innerHTML = `<div class="fb ok">🎉 แก้บั๊กสำเร็จ! การไล่ตามคำสั่งทีละขั้นเพื่อหาจุดที่ผิด คือทักษะสำคัญที่สุดของการเขียนโปรแกรม</div>`;
+      setTimeout(()=> finishZone('algo'), 1700);
+    }
+  } else {
+    wrongAnswer('algo');
+    fb.innerHTML = `<div class="fb no">คำสั่งรันจบแล้ว แต่หุ่นยังไม่ถึงเอกสาร 📄<br>
+      <span style="font-weight:400">ดูว่าหุ่นหยุดอยู่ตรงไหน แล้วเทียบกับเส้นทางที่วางไว้ (−${COSTS.wrong} พลัง)</span></div>`;
+  }
+}
+
+/* =====================================================================
+   ด่านสุดท้าย · หอประชุม — "สัปดาห์ส่งงาน"
+   ===================================================================== */
+let BS = null;
+let bossTimer = null;
+const BOSS_ROUNDS = 8, BOSS_SEC = 35;
+
+function startBoss(){
+  if(G.focus < CONFIG.passScore){
+    openModal(`
+      <div class="m-eyebrow">หอประชุม · ก่อนเริ่มด่านสุดท้าย</div>
+      <h2 class="m-title">⚠️ พลังสมาธิเหลือ ${G.focus} คะแนน</h2>
+      <div class="fb no">เกณฑ์รับเกียรติบัตรคือ <b>${CONFIG.passScore} คะแนนขึ้นไป</b> —
+        ถ้าเข้าด่านสุดท้ายตอนนี้ พลังจะลดลงอีกเมื่อตอบผิด และรอบนี้จะยังไม่ได้เกียรติบัตร</div>
+      <div class="story">คุณเลือกได้ว่าจะ <b>เริ่มภารกิจใหม่ทั้งหมด</b> เพื่อทำคะแนนให้ถึงเกณฑ์
+        หรือ <b>เล่นต่อให้จบ</b> เพื่อดูเฉลยและเรียนรู้ก่อน แล้วค่อยเล่นซ้ำอีกรอบ</div>
+      <div class="m-actions">
+        <button class="btn amber" onclick="restartRun()">🔄 เริ่มภารกิจใหม่</button>
+        <button class="btn ghost" onclick="reallyStartBoss()">เล่นต่อให้จบ →</button>
+      </div>`);
+    return;
+  }
+  reallyStartBoss();
+}
+
+function restartRun(){
+  const p = G.player;
+  G = newGame(p);
+  buildMap(); updateHUD();
+  startClock();
+  closeModal();
+  toast('🔄 เริ่มภารกิจใหม่แล้ว — โจทย์ถูกสุ่มใหม่ทั้งหมด');
+}
+
+function reallyStartBoss(){
+  BS = { qs: shuffle(BOSS_POOL).slice(0, BOSS_ROUNDS), i:0, correct:0, left:BOSS_SEC, locked:false };
+  modalLocked = true;
+  openModal(`
+    <div class="m-eyebrow">หอประชุม · วันศุกร์ 15:30 น.</div>
+    <h2 class="m-title">🏛️ ด่านสุดท้าย: สัปดาห์ส่งงาน</h2>
+    <div class="story">งานทุกอย่างมาถึงพร้อมกันในสัปดาห์เดียว —
+      ครูยิงคำถามรัว ๆ <b>${BOSS_ROUNDS} ข้อ</b> ข้อละ <b>${BOSS_SEC} วินาที</b><br><br>
+      ตอบผิดหรือหมดเวลา เสียพลังสมาธิข้อละ <b>${COSTS.bossWrong}</b> —
+      ใช้ <b>ไอเทมที่เก็บมา</b> ช่วยได้ในจังหวะสำคัญ</div>
+    <div class="task">🎒 ไอเทมของคุณ: ${
+      ['hourglass','lens','coffee','headset'].filter(k=> G.bag[k] === 'have')
+        .map(k=> ITEMS[k].icon + ' ' + ITEMS[k].name).join(' · ') || '— ไม่มี —' }</div>
+    <div class="m-actions"><button class="btn amber" onclick="bossRound()">⚔️ เริ่มด่านสุดท้าย</button></div>
+  `);
+}
+
+function bossRound(){
+  const q = BS.qs[BS.i];
+  BS.left = BOSS_SEC; BS.locked = false;
+  openModal(`
+    <div class="boss-top">
+      <span class="boss-round">ข้อ ${BS.i+1} / ${BOSS_ROUNDS}</span>
+      <div class="timer-wrap"><div class="timer-bar"><div class="timer-fill" id="tf"></div></div></div>
+      <span class="timer-num" id="tn">${BOSS_SEC}s</span>
+    </div>
+    <div class="items-bar">
+      <button id="it-lens"      onclick="useItem('lens')"      ${G.bag.lens      !== 'have' ? 'disabled' : ''}>🔍 ตัด 2 ตัวเลือกผิด</button>
+      <button id="it-hourglass" onclick="useItem('hourglass')" ${G.bag.hourglass !== 'have' ? 'disabled' : ''}>⏳ +20 วินาที</button>
+      <button id="it-coffee"    onclick="useItem('coffee')"    ${G.bag.coffee    !== 'have' ? 'disabled' : ''}>🥤 +8 พลัง</button>
+      <button id="it-headset"   onclick="useItem('headset')"   ${G.bag.headset   !== 'have' ? 'disabled' : ''}>🎧 ข้ามข้อนี้</button>
+    </div>
+    <span class="concept-tag">${esc(q.c)}</span>
+    <div class="task">${q.q}</div>
+    <div class="choices" id="bs-ch">${ q.o.map((o,i)=>
+      `<button id="bso-${i}" onclick="answerBoss(${i})">${o}</button>`).join('') }</div>
+    <div id="bs-fb"></div>
+  `);
+  document.getElementById('close').style.display = 'none';
+  startBossTimer();
+}
+
+function startBossTimer(){
+  if(bossTimer) clearInterval(bossTimer);
+  bossTimer = setInterval(()=>{
+    if(BS.locked) return;
+    BS.left--;
+    const tf = document.getElementById('tf'), tn = document.getElementById('tn');
+    if(!tf){ clearInterval(bossTimer); bossTimer = null; return; }
+    const pct = Math.max(0, BS.left / BOSS_SEC * 100);
+    tf.style.width = pct + '%';
+    tf.className = 'timer-fill' + (pct < 25 ? ' danger' : pct < 55 ? ' warn' : '');
+    tn.textContent = Math.max(0, BS.left) + 's';
+    if(BS.left <= 5 && BS.left > 0) SFX.tick();
+    if(BS.left <= 0){ clearInterval(bossTimer); bossTimer = null; timeoutBoss(); }
+  }, 1000);
+}
+
+function useItem(id){
+  if(G.bag[id] !== 'have' || BS.locked) return;
+  G.bag[id] = 'used';
+  renderBag();
+  const btn = document.getElementById('it-'+id); if(btn) btn.disabled = true;
+  SFX.item();
+  if(id === 'hourglass'){ BS.left += 20; toast('⏳ เพิ่มเวลาให้ข้อนี้ 20 วินาที'); }
+  else if(id === 'coffee'){ gainFocus(8, 'ใช้ไอเทม'); toast('🥤 คืนพลังสมาธิ 8 หน่วย'); }
+  else if(id === 'lens'){
+    const q = BS.qs[BS.i];
+    const wrongs = shuffle(q.o.map((_,i)=> i).filter(i=> i !== q.a)).slice(0,2);
+    wrongs.forEach(i=>{
+      const b = document.getElementById('bso-'+i);
+      if(b){ b.disabled = true; b.classList.add('dim'); }
+    });
+    toast('🔍 ตัดตัวเลือกที่ผิดออก 2 ข้อแล้ว');
+  }
+  else if(id === 'headset'){
+    BS.locked = true;
+    if(bossTimer){ clearInterval(bossTimer); bossTimer = null; }
+    document.getElementById('bs-fb').innerHTML =
+      `<div class="fb info">🎧 ข้ามข้อนี้โดยไม่เสียพลังสมาธิ — แต่ข้อนี้จะไม่นับว่าตอบถูก</div>`;
+    setTimeout(nextBossRound, 1200);
+  }
+}
+
+function answerBoss(i){
+  if(BS.locked) return;
+  BS.locked = true;
+  if(bossTimer){ clearInterval(bossTimer); bossTimer = null; }
+  const q = BS.qs[BS.i], fb = document.getElementById('bs-fb');
+  document.querySelectorAll('#bs-ch button').forEach((b,k)=>{
+    b.disabled = true;
+    if(k === q.a) b.classList.add('right');
+    else if(k === i) b.classList.add('wrong');
+  });
+  if(i === q.a){
+    BS.correct++; SFX.good();
+    fb.innerHTML = `<div class="fb ok">✅ ถูกต้อง!</div>`;
+  } else {
+    spendFocus(COSTS.bossWrong, 'ตอบผิดด่านสุดท้าย', 'boss');
+    G.wrongs++; G.zones.boss.wrongs++; SFX.bad();
+    fb.innerHTML = `<div class="fb no">❌ คำตอบที่ถูกคือข้อที่ไฮไลต์สีเขียว (−${COSTS.bossWrong} พลัง)</div>`;
+  }
+  setTimeout(nextBossRound, 1500);
+}
+
+function timeoutBoss(){
+  if(BS.locked) return;
+  BS.locked = true;
+  const q = BS.qs[BS.i], fb = document.getElementById('bs-fb');
+  document.querySelectorAll('#bs-ch button').forEach((b,k)=>{
+    b.disabled = true; if(k === q.a) b.classList.add('right');
+  });
+  spendFocus(COSTS.bossTimeout, 'หมดเวลา', 'boss');
+  SFX.bad();
+  fb.innerHTML = `<div class="fb no">⏰ หมดเวลา! คำตอบที่ถูกคือข้อที่ไฮไลต์สีเขียว (−${COSTS.bossTimeout} พลัง)</div>`;
+  setTimeout(nextBossRound, 1600);
+}
+
+function nextBossRound(){
+  BS.i++;
+  if(BS.i < BOSS_ROUNDS) bossRound();
+  else endBoss();
+}
+
+function endBoss(){
+  if(bossTimer){ clearInterval(bossTimer); bossTimer = null; }
+  G.zones.boss.done = true;
+  G.endedAt = Date.now();
+  stopClock();
+  modalLocked = false;
+  document.getElementById('close').style.display = '';
+  SFX.win();
+  openModal(`
+    <div class="m-eyebrow">จบภารกิจ</div>
+    <h2 class="m-title">🎊 งานโรงเรียนผ่านไปได้ด้วยดี!</h2>
+    <div class="fb ok">คุณตอบถูก <b>${BS.correct} / ${BOSS_ROUNDS}</b> ข้อในด่านสุดท้าย</div>
+    <div class="story">ครูเดินมาตบไหล่ “ที่พวกเธอทำมาทั้งสัปดาห์ ไม่ใช่แค่จัดงานนะ —
+      มันคือการ <b>แบ่งปัญหา หารูปแบบ ตัดสิ่งไม่จำเป็นทิ้ง และวางลำดับขั้นตอน</b>
+      ทักษะชุดนี้ใช้ได้กับทุกเรื่องในชีวิต ไม่ใช่แค่กับคอมพิวเตอร์”</div>
+    <div class="m-actions"><button class="btn" onclick="showResult()">📊 ดูผลคะแนนรวม</button></div>
+  `);
+}
+
+/* =====================================================================
+   หน้าผลคะแนน
+   ===================================================================== */
+function tierOf(score){
+  if(score >= CONFIG.goldScore) return { key:'gold',   label:'ระดับทอง',  cls:'gold',   icon:'🥇' };
+  if(score >= CONFIG.passScore) return { key:'silver', label:'ระดับเงิน', cls:'silver', icon:'🥈' };
+  return { key:'fail', label:'ยังไม่ผ่านเกณฑ์', cls:'fail', icon:'📘' };
+}
+
+function showResult(){
+  closeModal();
+  const secs = Math.floor(((G.endedAt || Date.now()) - G.startedAt) / 1000);
+  const score = G.focus, t = tierOf(score), passed = score >= CONFIG.passScore;
+  if(!G.saved){ saveToBoard(score, secs, t); G.saved = true; }   // บันทึกกระดานครั้งเดียวต่อรอบ
+
+  const names = { decomp:'🏟️ โรงยิม · การแบ่งปัญหา', pattern:'📚 ห้องสมุด · การหารูปแบบ',
+                  abstract:'🍜 โรงอาหาร · การคิดเชิงนามธรรม', algo:'💻 ห้องคอม · อัลกอริทึม',
+                  boss:'🏛️ หอประชุม · ด่านสุดท้าย' };
+  const rows = Object.keys(names).map(k=>{
+    const z = G.zones[k];
+    const detail = [];
+    if(z.hints)  detail.push('คำใบ้ ' + z.hints + ' ครั้ง');
+    if(z.wrongs) detail.push('ตอบผิด ' + z.wrongs + ' ครั้ง');
+    return `<div class="brow"><span>${names[k]}</span>
+      <span>${ detail.length ? detail.join(' · ') + ' → −' + z.spent + ' พลัง' : 'ผ่านฉลุย ไม่เสียพลัง 💯' }</span></div>`;
+  }).join('');
+
+  document.getElementById('result-body').innerHTML = `
+    <div class="score-hero">
+      <div class="eyebrow">ผลภารกิจของ ${esc(G.player.name)} · ม.4/${G.player.room} เลขที่ ${G.player.no}</div>
+      <div class="score-num" style="margin-top:10px;">${score}<small> / 100</small></div>
+      <div class="tier ${t.cls}">${t.icon} ${t.label}</div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><b>${fmtTime(secs)}</b><span>เวลาที่ใช้</span></div>
+      <div class="stat"><b>${G.hintsUsed}</b><span>คำใบ้ที่ขอ</span></div>
+      <div class="stat"><b>${G.wrongs}</b><span>ครั้งที่ตอบผิด</span></div>
+      <div class="stat"><b>${BS ? BS.correct : 0}/${BOSS_ROUNDS}</b><span>ด่านสุดท้าย</span></div>
+    </div>
+    <h3 style="font-size:15px; margin-bottom:8px;">รายละเอียดพลังสมาธิที่ใช้ไป</h3>
+    <div class="breakdown">${rows}</div>
+    ${ passed
+      ? `<div class="fb ok" style="margin-top:16px;">🏅 ยินดีด้วย! คุณผ่านเกณฑ์ ${CONFIG.passScore} คะแนน — รับเกียรติบัตรไปส่งใน Classroom ได้เลย</div>`
+      : `<div class="fb no" style="margin-top:16px;">📘 คะแนนยังไม่ถึงเกณฑ์ ${CONFIG.passScore} คะแนน จึงยังรับเกียรติบัตรไม่ได้<br>
+          <span style="font-weight:400">ลองเล่นใหม่อีกครั้ง — โจทย์จะถูกสุ่มใหม่ และตอนนี้คุณรู้วิธีคิดแล้ว คะแนนจะดีขึ้นแน่นอน</span></div>` }
+    <div class="m-actions" style="margin-top:16px; justify-content:center;">
+      ${ passed ? '<button class="btn amber" onclick="showCertificate()">🏅 รับเกียรติบัตร</button>' : '' }
+      <button class="btn ${passed?'ghost':''}" onclick="playAgain()">🔄 เล่นอีกครั้ง</button>
+      <button class="btn ghost" onclick="showLeaderboard()">🏆 กระดานคะแนน</button>
+      <button class="btn ghost" onclick="quitToStartHard()">👤 เปลี่ยนผู้เล่น</button>
+    </div>
+  `;
+  showScreen('s-result');
+}
+
+function playAgain(){
+  const p = G.player;
+  G = newGame(p);
+  buildMap(); updateHUD(); startClock();
+  showScreen('s-map');
+  try{ document.getElementById('map').focus({ preventScroll:true }); }catch(e){}
+  toast('🔄 เริ่มรอบใหม่ — โจทย์ถูกสุ่มใหม่ทั้งหมด');
+}
+function quitToStartHard(){
+  stopClock(); G = null; closeModal(); showScreen('s-start');
+  document.getElementById('in-name').value = '';
+  document.getElementById('in-no').value = '';
+}
+
+/* =====================================================================
+   รหัสตรวจสอบเกียรติบัตร (เข้ารหัสข้อมูลจริงลงในรหัส 14 ตัวอักษร)
+   ===================================================================== */
+const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+function fnv1a(str){
+  let h = 0x811c9dc5;
+  for(let i=0; i<str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h >>> 0;
+}
+function bits(v, n){
+  let s = (Math.max(0, v) >>> 0).toString(2);
+  if(s.length > n) s = s.slice(-n);
+  return s.padStart(n, '0');
+}
+function xorStream(s){
+  let k = fnv1a(CERT_SALT) || 1, out = '';
+  for(let i=0; i<s.length; i++){
+    k = (Math.imul(k, 1664525) + 1013904223) >>> 0;
+    out += (((s.charCodeAt(i) - 48) ^ ((k >>> 23) & 1)) ? '1' : '0');
+  }
+  return out;
+}
+function normName(n){ return String(n).trim().replace(/\s+/g,' '); }
+function nameHash(n){ return fnv1a(normName(n) + '|' + CERT_SALT) & 0x3FFF; }
+function dayOfYear(d){ return Math.floor((d - new Date(d.getFullYear(),0,0)) / 86400000); }
+
+function makeCode(d){
+  let b = bits(1,3) + bits(d.score,7) + bits(d.room,4) + bits(d.no,6)
+        + bits(d.doy,9) + bits(d.yearOff,4) + bits(d.minutes,7)
+        + bits(d.hints,5) + bits(d.nameHash,14);            // 59 บิต
+  b += bits(fnv1a(b + CERT_SALT) & 63, 6);                  // checksum → 65 บิต
+  b = xorStream(b.padEnd(70,'0'));
+  let out = '';
+  for(let i=0; i<70; i+=5) out += B32[parseInt(b.substr(i,5), 2)];
+  return out.slice(0,5) + '-' + out.slice(5,10) + '-' + out.slice(10,14);
+}
+
+function readCode(code){
+  const c = String(code).toUpperCase().replace(/[^0-9A-Z]/g,'')
+              .replace(/I/g,'1').replace(/L/g,'1').replace(/O/g,'0').replace(/U/g,'V');
+  if(c.length !== 14) return { ok:false, msg:'รหัสต้องมี 14 ตัวอักษร (ไม่นับขีด) — ตรวจสอบว่าพิมพ์ครบหรือยัง' };
+  let b = '';
+  for(const ch of c){
+    const v = B32.indexOf(ch);
+    if(v < 0) return { ok:false, msg:'พบตัวอักษรที่ไม่ถูกต้องในรหัส: ' + ch };
+    b += bits(v,5);
+  }
+  b = xorStream(b);
+  const body = b.slice(0,59), sum = parseInt(b.slice(59,65), 2);
+  if((fnv1a(body + CERT_SALT) & 63) !== sum)
+    return { ok:false, msg:'❌ รหัสไม่ถูกต้อง — เกียรติบัตรนี้อาจถูกแก้ไข หรือพิมพ์รหัสผิด' };
+  const g = (s,n)=> parseInt(body.substr(s,n), 2);
+  if(g(0,3) !== 1) return { ok:false, msg:'รหัสมาจากเกมคนละรุ่น' };
+  return { ok:true, score:g(3,7), room:g(10,4), no:g(14,6), doy:g(20,9),
+           yearOff:g(29,4), minutes:g(33,7), hints:g(40,5), nameHash:g(45,14) };
+}
+
+function certData(){
+  const now = new Date();
+  const secs = Math.floor(((G.endedAt || Date.now()) - G.startedAt) / 1000);
+  return {
+    name: normName(G.player.name), room: G.player.room, no: G.player.no,
+    score: G.focus, doy: dayOfYear(now), yearOff: Math.max(0, Math.min(15, (now.getFullYear() + 543) - 2569)),
+    minutes: Math.min(127, Math.round(secs/60)), hints: Math.min(31, G.hintsUsed),
+    nameHash: nameHash(G.player.name), date: now, secs
+  };
+}
+function thaiDate(d){
+  try{ return d.toLocaleDateString('th-TH-u-ca-buddhist', { day:'numeric', month:'long', year:'numeric' }); }
+  catch(e){ return d.getDate() + '/' + (d.getMonth()+1) + '/' + (d.getFullYear()+543); }
+}
+
+/* =====================================================================
+   วาดเกียรติบัตรลง Canvas แล้วดาวน์โหลดเป็น PNG
+   ===================================================================== */
+let CERT = null;
+
+function certFileName(){
+  return 'เกียรติบัตร_' + CERT.name.replace(/\s+/g,'') + '_ม4-' + CERT.room + '_เลขที่' + CERT.no + '.png';
+}
+
+function showCertificate(){
+  CERT = certData();
+  CERT.code = makeCode(CERT);
+  const t = tierOf(CERT.score);
+  // จอสัมผัส (มือถือ/แท็บเล็ต) บันทึกรูปด้วยการ "แตะค้าง" ไม่ใช่ปุ่มดาวน์โหลด
+  // โดยเฉพาะ iPhone ที่ไม่รองรับ attribute download เลย
+  const touch = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+
+  document.getElementById('cert-body').innerHTML = `
+    <div class="eyebrow" style="text-align:center;">เกียรติบัตรของคุณ</div>
+    <h2 class="title" style="font-size:24px; text-align:center; margin-bottom:14px;">🏅 ${esc(t.label)}</h2>
+
+    <!-- ใช้ <img> แทน <canvas> เพราะบนมือถือ "แตะค้างที่รูป → บันทึกรูปภาพ"
+         ใช้ได้กับ <img> เท่านั้น canvas แตะค้างแล้วไม่มีเมนูให้บันทึก -->
+    <img id="certImg" alt="เกียรติบัตร ${esc(CERT.name)}"
+         style="width:100%; height:auto; display:block; border-radius:10px;
+                box-shadow:0 14px 34px rgba(0,0,0,.5); background:#fdfaf2; aspect-ratio:1400/990;">
+    <div id="cert-wait" class="cert-hint" style="text-align:center; margin-top:10px;">⏳ กำลังวาดเกียรติบัตร…</div>
+
+    <div style="text-align:center; margin:18px 0 10px;">
+      <div class="code-badge">รหัสตรวจสอบ: ${CERT.code}</div>
+    </div>
+
+    <div class="cert-hint" style="text-align:center;">
+      ${ touch
+        ? `① <b>แตะที่รูปเกียรติบัตรค้างไว้ 1 วินาที</b> → เลือก “บันทึกรูปภาพ” หรือ “ดาวน์โหลดรูปภาพ”<br>
+           <span style="opacity:.8">(ถ้าเครื่องมีปุ่มดาวน์โหลด จะกดปุ่มสีส้มด้านล่างแทนก็ได้)</span><br>`
+        : `① กดปุ่มสีส้มด้านล่างเพื่อบันทึกรูปเกียรติบัตรลงเครื่อง<br>` }
+      ② เปิด Google Classroom → งานที่ครูมอบหมาย → <b>เพิ่มไฟล์รูปที่บันทึกไว้</b> → กด “ส่ง”<br>
+      ③ รหัสตรวจสอบอยู่บนเกียรติบัตรแล้ว ครูจะใช้รหัสนี้ตรวจสอบผลของคุณ
+    </div>
+
+    <div class="m-actions" style="justify-content:center; margin-top:16px;">
+      <a class="btn amber" id="cert-dl" href="#" download="${esc(certFileName())}"
+         style="pointer-events:none; opacity:.45;"
+         onclick="certSaved()">⬇️ บันทึกเกียรติบัตร (PNG)</a>
+      <button class="btn ghost" onclick="showResult()">← กลับไปหน้าผลคะแนน</button>
+      <button class="btn ghost" onclick="quitToStartHard()">👤 เปลี่ยนผู้เล่น</button>
+    </div>`;
+  showScreen('s-cert');
+
+  const draw = ()=>{
+    try{
+      const cv = document.createElement('canvas');
+      drawCert(cv, CERT);
+      const url = cv.toDataURL('image/png');
+      const img = document.getElementById('certImg'); if(img) img.src = url;
+      const dl  = document.getElementById('cert-dl');
+      if(dl){ dl.href = url; dl.style.pointerEvents = 'auto'; dl.style.opacity = '1'; }
+      const w   = document.getElementById('cert-wait'); if(w) w.remove();
+    }catch(e){
+      const w = document.getElementById('cert-wait');
+      if(w) w.innerHTML = '⚠️ วาดเกียรติบัตรไม่สำเร็จ — ลองรีเฟรชหน้าเว็บแล้วกดรับเกียรติบัตรอีกครั้ง';
+    }
+  };
+  // รอฟอนต์ไทยโหลดเสร็จก่อนวาด ไม่งั้นชื่อบนเกียรติบัตรจะกลายเป็นฟอนต์สำรอง
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(draw).catch(draw);
+  else draw();
+}
+
+function certSaved(){
+  toast('⬇️ ถ้าเครื่องบันทึกไฟล์แล้ว ให้ไปแนบรูปนี้ใน Google Classroom ได้เลย', 4200);
+  SFX.win();
+}
+
+function drawCert(cv, d){
+  const W = 1400, H = 990, ctx = cv.getContext('2d');
+  cv.width = W; cv.height = H;
+  const t = tierOf(d.score);
+  const accent = t.key === 'gold' ? '#b8860b' : '#5a7184';
+
+  ctx.fillStyle = '#fdfaf2'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = 'rgba(184,134,11,.05)';
+  for(let i=-H; i<W; i+=26){ ctx.fillRect(i, 0, 5, H); }
+  ctx.fillStyle = '#fdfaf2'; ctx.fillRect(28,28,W-56,H-56);
+
+  ctx.strokeStyle = accent; ctx.lineWidth = 6;  ctx.strokeRect(34,34,W-68,H-68);
+  ctx.lineWidth = 2; ctx.strokeStyle = accent + '99'; ctx.strokeRect(50,50,W-100,H-100);
+  ctx.fillStyle = accent;
+  [[34,34],[W-34,34],[34,H-34],[W-34,H-34]].forEach(([x,y])=>{
+    ctx.beginPath(); ctx.arc(x,y,13,0,Math.PI*2); ctx.fill();
+  });
+
+  const C = (txt, y, size, color, weight, font)=>{
+    ctx.fillStyle = color; ctx.textAlign = 'center';
+    ctx.font = (weight||'400') + ' ' + size + 'px ' + (font || "'Sarabun','Tahoma',sans-serif");
+    ctx.fillText(txt, W/2, y);
+  };
+
+  C(CONFIG.schoolName, 128, 34, '#2b3a4d', '600', "'Kanit','Tahoma',sans-serif");
+  C(CONFIG.subject,    166, 20, '#6b7280');
+
+  ctx.strokeStyle = accent + '66'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(W/2-190,192); ctx.lineTo(W/2+190,192); ctx.stroke();
+
+  C('เกียรติบัตรฉบับนี้ให้ไว้เพื่อแสดงว่า', 252, 26, '#4a5563');
+  C(d.name, 330, 56, '#1b2a3d', '700', "'Kanit','Tahoma',sans-serif");
+  C('ชั้นมัธยมศึกษาปีที่ 4/' + d.room + '   เลขที่ ' + d.no, 378, 24, '#4a5563');
+
+  C('ได้ผ่านกิจกรรมการเรียนรู้', 442, 24, '#4a5563');
+  C(CONFIG.activity, 486, 29, '#2b3a4d', '600', "'Kanit','Tahoma',sans-serif");
+  C('โดยแสดงความสามารถครบทั้ง 4 องค์ประกอบของแนวคิดเชิงคำนวณ', 526, 20, '#6b7280');
+  C('การแบ่งปัญหา · การหารูปแบบ · การคิดเชิงนามธรรม · การออกแบบอัลกอริทึม', 556, 19, '#6b7280');
+
+  // แถบผล
+  const bx = W/2 - 430, by = 596, bw = 860, bh = 96;
+  ctx.fillStyle = '#f6f1e3'; roundRect(ctx, bx, by, bw, bh, 14); ctx.fill();
+  ctx.strokeStyle = accent + '55'; ctx.lineWidth = 2; roundRect(ctx, bx, by, bw, bh, 14); ctx.stroke();
+  const cell = (label, value, cx)=>{
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#7c8794'; ctx.font = "400 17px 'Sarabun','Tahoma',sans-serif";
+    ctx.fillText(label, cx, by + 34);
+    ctx.fillStyle = '#1b2a3d'; ctx.font = "600 27px 'Kanit','Tahoma',sans-serif";
+    ctx.fillText(value, cx, by + 72);
+  };
+  cell('คะแนน',      d.score + ' / 100', bx + bw*0.17);
+  cell('ระดับ',       t.label,            bx + bw*0.39);
+  cell('เวลาที่ใช้',  fmtTime(d.secs),    bx + bw*0.61);
+  cell('คำใบ้ที่ขอ',  d.hints + ' ครั้ง', bx + bw*0.83);
+
+  // ตราระดับ
+  ctx.beginPath(); ctx.arc(W/2, 772, 44, 0, Math.PI*2);
+  ctx.fillStyle = t.key === 'gold' ? '#f5e0a3' : '#dde4ea'; ctx.fill();
+  ctx.strokeStyle = accent; ctx.lineWidth = 3; ctx.stroke();
+  ctx.textAlign = 'center'; ctx.fillStyle = accent;
+  ctx.font = "600 20px 'Kanit','Tahoma',sans-serif";
+  ctx.fillText(t.key === 'gold' ? 'ทอง' : 'เงิน', W/2, 780);
+
+  // ล่างซ้าย: วันที่ · ล่างขวา: ลายเซ็น
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#4a5563'; ctx.font = "400 20px 'Sarabun','Tahoma',sans-serif";
+  ctx.fillText('ให้ไว้ ณ วันที่ ' + thaiDate(d.date), 120, 880);
+  ctx.font = "400 17px 'Sarabun','Tahoma',sans-serif"; ctx.fillStyle = '#7c8794';
+  ctx.fillText('รหัสตรวจสอบ: ' + d.code, 120, 912);
+
+  ctx.strokeStyle = '#9aa4b0'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(W-500, 862); ctx.lineTo(W-120, 862); ctx.stroke();
+  ctx.textAlign = 'center'; ctx.fillStyle = '#2b3a4d';
+  ctx.font = "500 21px 'Kanit','Tahoma',sans-serif";
+  ctx.fillText(CONFIG.teacherName, W-310, 894);
+  ctx.fillStyle = '#7c8794'; ctx.font = "400 17px 'Sarabun','Tahoma',sans-serif";
+  ctx.fillText('ครูผู้สอน', W-310, 920);
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+
+/* =====================================================================
+   กระดานคะแนน
+   · เก็บลงเครื่องเสมอ (ใช้ได้แม้เปิดไฟล์แบบออฟไลน์)
+   · ถ้ารันบน Apps Script จะส่งขึ้น Google Sheet ของครูด้วย
+     และกระดานจะแสดงคะแนนรวมของทุกคนแทน
+   ===================================================================== */
+function loadBoard(){ try{ return JSON.parse(LS.get('ct_board') || '[]'); }catch(e){ return []; } }
+
+function saveToBoard(score, secs, t){
+  const row = { n:G.player.name, r:G.player.room, no:G.player.no, s:score, t:secs,
+                tier:t.key, d:new Date().toISOString().slice(0,10) };
+  const b = loadBoard();
+  b.push(row);
+  b.sort((a,c)=> c.s - a.s || a.t - c.t);
+  LS.set('ct_board', JSON.stringify(b.slice(0,50)));
+
+  if(!ONLINE) return;
+  let code = '';
+  try{ code = makeCode(certData()); }catch(e){}
+  submitScore({
+    name : normName(G.player.name),
+    room : G.player.room,
+    no   : G.player.no,
+    score: score,
+    tier : t.key,          // 'gold' | 'silver' | 'fail' — ฝั่ง Code.gs จะแปลงเป็นภาษาไทย
+    secs : secs,
+    hints: G.hintsUsed,
+    wrongs: G.wrongs,
+    boss : (BS ? BS.correct : 0) + '/' + BOSS_ROUNDS,
+    code : code,
+    passed: score >= CONFIG.passScore ? 'ผ่าน' : 'ไม่ผ่าน'
+  }, r=>{
+    if(r && r.ok) toast('☁️ ส่งคะแนนเข้าระบบของครูเรียบร้อยแล้ว', 3200);
+    else toast('⚠️ ส่งคะแนนขึ้นระบบไม่สำเร็จ — อย่าเพิ่งปิดหน้านี้ แจ้งครูหรือลองรับเกียรติบัตรไว้ก่อน', 6000);
+  });
+}
+
+function lbTableHTML(list, me){
+  if(!list || !list.length)
+    return '<p class="cert-hint">ยังไม่มีใครทำคะแนนไว้ — มาเป็นคนแรกกันเถอะ!</p>';
+  return `<div style="overflow-x:auto;"><table class="lb">
+    <tr><th>#</th><th>ชื่อ</th><th>ชั้น</th><th>คะแนน</th><th>เวลา</th><th>ระดับ</th><th>วันที่</th></tr>
+    ${ list.map((x,i)=>`<tr class="${ me && x.n === me ? 'me' : '' }">
+      <td class="rank">${i+1}</td><td>${esc(x.n)}</td><td>ม.4/${esc(x.r)} เลขที่ ${esc(x.no)}</td>
+      <td><b>${esc(x.s)}</b></td><td>${fmtTime(x.t)}</td>
+      <td>${ x.tier === 'gold' ? '🥇 ทอง' : x.tier === 'silver' ? '🥈 เงิน' : '📘 ไม่ผ่าน' }</td>
+      <td style="color:#a8bbd4">${esc(x.d)}</td></tr>`).join('') }
+  </table></div>`;
+}
+
+function showLeaderboard(){
+  const me = G ? G.player.name : null;
+  document.getElementById('lb-body').innerHTML = `
+    <div class="eyebrow" id="lb-src">${ ONLINE ? 'คะแนนรวมทุกคน · กำลังโหลด…' : 'เครื่องนี้เท่านั้น · เก็บไว้ 50 อันดับล่าสุด' }</div>
+    <h2 class="title" style="font-size:22px; margin:6px 0 14px;">🏆 กระดานคะแนน</h2>
+    <div id="lb-table">${ lbTableHTML(loadBoard(), me) }</div>
+    <div class="m-actions" style="margin-top:18px;">
+      <button class="btn ghost" onclick="${ G ? 'showResult()' : "showScreen('s-start')" }">← กลับ</button>
+      ${ ONLINE
+        ? '<button class="btn ghost" onclick="showLeaderboard()">🔄 รีเฟรช</button>'
+        : '<button class="btn ghost" onclick="clearBoard()">🗑️ ล้างกระดานในเครื่องนี้</button>' }
+    </div>`;
+  showScreen('s-lb');
+
+  if(ONLINE) fetchBoard(rows=>{
+    const src = document.getElementById('lb-src'), tb = document.getElementById('lb-table');
+    if(!src || !tb) return;                     // ผู้เล่นเปลี่ยนหน้าไปแล้ว
+    if(rows){
+      src.textContent = 'คะแนนรวมของทุกคน · 50 อันดับแรก';
+      tb.innerHTML = lbTableHTML(rows, me);
+    }else{
+      src.textContent = 'โหลดคะแนนรวมไม่สำเร็จ — กำลังแสดงคะแนนของเครื่องนี้แทน';
+    }
+  });
+}
+
+function clearBoard(){
+  askConfirm('🗑️ ล้างกระดานคะแนน?',
+    'จะลบเฉพาะคะแนนที่เก็บไว้ในเครื่อง/เบราว์เซอร์นี้ ทำแล้วย้อนกลับไม่ได้<br>' +
+    '<span style="font-weight:400">(คะแนนที่ส่งขึ้น Google Sheet ของครูไม่ถูกลบ)</span>',
+    '🗑️ ล้างเลย', ()=>{
+      LS.del('ct_board');
+      showLeaderboard();
+      toast('ล้างกระดานคะแนนในเครื่องนี้เรียบร้อย');
+    });
+}
+
+/* =====================================================================
+   หน้าตรวจรหัสเกียรติบัตร (สำหรับครู)
+   ===================================================================== */
+function showVerify(){
+  document.getElementById('verify-body').innerHTML = `
+    <div class="eyebrow">สำหรับครูผู้สอน</div>
+    <h2 class="title" style="font-size:22px; margin:6px 0 10px;">🔎 ตรวจรหัสเกียรติบัตร</h2>
+    <p class="cert-hint">คัดลอกรหัส 14 ตัวอักษรจากเกียรติบัตรที่นักเรียนส่งมาใน Classroom มาวางที่ช่องนี้
+      ระบบจะถอดข้อมูลจริงออกมาให้ ถ้ารูปถูกแก้ไขด้วยโปรแกรมแต่งภาพ ตัวเลขจะไม่ตรงกับรหัส</p>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="field"><label for="v-code">รหัสตรวจสอบ</label>
+        <input id="v-code" type="text" placeholder="เช่น A7K2M-9QX4P-TB3F" autocomplete="off"></div>
+      <div class="field"><label for="v-name">ชื่อ–นามสกุลบนเกียรติบัตร (ไม่บังคับ)</label>
+        <input id="v-name" type="text" placeholder="พิมพ์เพื่อตรวจว่าชื่อตรงกับรหัสหรือไม่" autocomplete="off"></div>
+    </div>
+    <div class="m-actions" style="margin-top:12px;">
+      <button class="btn" onclick="doVerify()">ตรวจสอบ</button>
+      <button class="btn ghost" onclick="showScreen('s-start')">← กลับหน้าแรก</button>
+    </div>
+    <div id="v-out" style="margin-top:16px;"></div>`;
+  showScreen('s-verify');
+}
+
+function doVerify(){
+  const out = document.getElementById('v-out');
+  const r = readCode(document.getElementById('v-code').value);
+  if(!r.ok){ out.innerHTML = `<div class="fb no">${esc(r.msg)}</div>`; return; }
+  const year = 2569 + r.yearOff;
+  const g = new Date(year - 543, 0, r.doy);
+  const nm = document.getElementById('v-name').value.trim();
+  const nameLine = !nm ? '<span style="color:#a8bbd4">— ไม่ได้กรอกชื่อเพื่อตรวจสอบ —</span>'
+    : (nameHash(nm) === r.nameHash
+        ? '<b style="color:#a5d66a">✔ ชื่อตรงกับรหัส</b>'
+        : '<b style="color:#ff8a80">✘ ชื่อไม่ตรงกับรหัสนี้</b>');
+  const t = tierOf(r.score);
+  out.innerHTML = `
+    <div class="fb ok">✅ รหัสถูกต้อง — เกียรติบัตรนี้ออกโดยเกมจริง</div>
+    <div class="breakdown">
+      <div class="brow"><span>คะแนน</span><span><b style="color:#fff; font-size:15px;">${r.score} / 100</b> · ${t.icon} ${t.label}</span></div>
+      <div class="brow"><span>ชั้น / เลขที่</span><span>ม.4/${r.room} เลขที่ ${r.no}</span></div>
+      <div class="brow"><span>วันที่เล่น</span><span>${thaiDate(g)}</span></div>
+      <div class="brow"><span>เวลาที่ใช้เล่น</span><span>ประมาณ ${r.minutes} นาที</span></div>
+      <div class="brow"><span>จำนวนคำใบ้ที่ขอ</span><span>${r.hints} ครั้ง</span></div>
+      <div class="brow"><span>ตรวจสอบชื่อ</span><span>${nameLine}</span></div>
+    </div>
+    <p class="cert-hint" style="margin-top:12px;">หมายเหตุ: ระบบนี้ป้องกันการแก้ไขรูปด้วยโปรแกรมแต่งภาพได้
+      แต่ไม่ได้ป้องกันการแก้ไขไฟล์เกมโดยตรง — ถ้าต้องการความเข้มงวดขึ้น ครูสามารถเปลี่ยนค่า
+      <b>CERT_SALT</b> ที่บรรทัดบนสุดของไฟล์ แล้วแจกไฟล์รุ่นใหม่ให้นักเรียน</p>`;
+}
+
+</script>
+</body>
+</html>
